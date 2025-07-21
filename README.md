@@ -91,6 +91,25 @@ While several microcontrollers are suitable for embedded IoT applications, this 
 
 ---
 
+
+## 🗓️ 12-Week Project Timeline – Water Level Monitoring System
+
+| **Week** | **Tasks** |
+|----------|-----------|
+| **Week 1** | • Finalize project scope and objectives.<br>• Research existing water level monitoring systems and decide on technologies (ESP32, NB-IoT, etc.). |
+| **Week 2** | • Select components: sensors, ESP32, NB-IoT module, buzzer, power unit.<br>• Procure required hardware. |
+| **Week 3** | • Test individual components: water level sensor, ESP32, buzzer.<br>• Blink test and serial output checks. |
+| **Week 4** | • Set up serial communication between ESP32 and NB-IoT module (e.g., AT commands).<br>• Test basic data send. |
+| **Week 5** | • Integrate water level sensor with ESP32.<br>• Read and filter sensor data (analog/digital). |
+| **Week 6** | • Implement water level logic (e.g., critical levels).<br>• Add buzzer control for alerts. |
+| **Week 7** | • Develop firmware to send data via NB-IoT.<br>• Format sensor data (JSON/CSV) for transmission. |
+| **Week 8** | • Set up cloud endpoint or test server (optional).<br>• Connect NB-IoT output to destination. |
+| **Week 9** | • Perform system integration test: sensor → ESP32 → NB-IoT → cloud + buzzer alert.<br>• Add failure handling. |
+| **Week 10** | • Design and build system casing/enclosure.<br>• Ensure protection against water/weather. |
+| **Week 11** | • Deploy in real environment (e.g., water tank).<br>• Monitor data and performance. |
+| **Week 12** | • Final testing and optimization.<br>• Write documentation, finalize README, and prepare for demo. |
+
+
 ## Future Enhancements
 
 - Integration with solar charging for full off-grid capability
