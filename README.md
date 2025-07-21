@@ -1,6 +1,9 @@
 # Smart-River-Water-Level-Monitoring-and-Alert-System
 Affordable, maintainable river water level gauge with Alert System
 
+
+![System Architecture](assets/system-architecture.png)
+
 ## Project Summary
 
 This project presents a cost-effective and maintainable river water level monitoring and alert system. It is specifically designed for deployment in remote or rural areas where conventional solutions are either too expensive, require complex maintenance, or rely heavily on satellite communication.
