@@ -34,6 +34,24 @@ The system uses a combination of low-power hardware and modern wireless communic
 
 ---
 
+## 🗓️ 12-Week Project Timeline – Water Level Monitoring System
+
+| **Week** | **Tasks** |
+|----------|-----------|
+| **Week 1** | • Finalize the project idea and use case.<br>• Define high-level objectives (e.g., monitor, alert, transmit water level). |
+| **Week 2** | • Research existing water level monitoring systems.<br>• Identify real-world issues with data transmission and alerting. |
+| **Week 3** | • Research affordable and reliable components (e.g., sensors, ESP32, NB-IoT modules).<br>• Compare alternatives based on cost, power usage, and compatibility. |
+| **Week 4** | • Select and finalize components based on Week 3 findings.<br>• Create a detailed block diagram and system design. |
+| **Week 5** | • Begin testing selected components individually (sensor, ESP32, buzzer, NB-IoT module).<br>• Test basic connectivity and data reading. |
+| **Week 6** | • Develop water level detection logic on ESP32.<br>• Add buzzer activation for alert conditions. |
+| **Week 7** | • Set up and test communication between ESP32 and NB-IoT module using AT commands.<br>• Format sensor data for transmission. |
+| **Week 8** | • Develop or simulate backend endpoint (cloud/server).<br>• Send test data from ESP32 via NB-IoT to destination. |
+| **Week 9** | • Integrate all parts: water level sensing + logic + buzzer + NB-IoT transmission.<br>• Add failure detection and retries. |
+| **Week 10** | • Design enclosure for components (weatherproof if needed).<br>• Power supply planning and integration. |
+| **Week 11** | • Field testing in real environment (e.g., water tank).<br>• Adjust thresholds and calibrate sensors. |
+| **Week 12** | • Final debugging and optimization.<br>• Document the system, update README, and prepare presentation/demo. |
+
+
 ## Hardware Components
 
 | Component                         | Description                                                         |
