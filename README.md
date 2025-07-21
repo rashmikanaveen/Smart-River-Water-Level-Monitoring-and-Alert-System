@@ -33,14 +33,27 @@ The system uses a combination of low-power hardware and modern wireless communic
 
 ## Hardware Components
 
-| Component                         | Description                                          |
-|----------------------------------|------------------------------------------------------|
-| ESP32 Microcontroller            | Central processing unit with integrated Wi-Fi/BLE   |
-| A02YYUW Ultrasonic Sensor        | Waterproof, accurate distance measurement            |
-| NB-IoT Module (e.g., SIM7020)    | Cellular communication using MQTT protocol           |
-| GPS Module (e.g., NEO-M8N)       | Provides station location data                       |
-| Buzzer or Speaker                | Provides audible alerts for high water levels        |
-| Power Supply                     | Rechargeable battery, optionally solar powered       |
+| Component                         | Description                                                         |
+|----------------------------------|----------------------------------------------------------------------|
+| ESP32 Microcontroller            | Main controller for logic, sensor reading, and serial communication  |
+| A02YYUW Ultrasonic Sensor        | Waterproof, accurate distance measurement                            |
+| NB-IoT Module (e.g., SIM7020)    | Cellular communication using MQTT protocol                           |
+| GPS Module (e.g., NEO-M8N)       | Provides station location data                                       |
+| Buzzer or Speaker                | Provides audible alerts for high water levels                        |
+| Power Supply                     | Rechargeable battery, optionally solar powered                       |
+
+---
+## Why ESP32?
+
+While several microcontrollers are suitable for embedded IoT applications, this project uses the **ESP32** (without Wi-Fi/BLE) for several important reasons:
+
+### Benefits of Using ESP32:
+
+- **Dual-core processor** (Tensilica Xtensa LX6) → allows concurrent tasks (e.g., sensor polling + NB-IoT communication)
+- **More Flash/RAM** than STM32 Blue Pill → easier for MQTT, GPS parsing, sensor filtering
+- **Supports multiple UARTs** → useful when using GPS, NB-IoT module, and debugging over serial
+- **Good development ecosystem** → widely supported in Arduino and ESP-IDF environments
+- **Lower development time** due to rich libraries and community support
 
 ---
 
