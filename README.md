@@ -34,22 +34,7 @@ The system uses a combination of low-power hardware and modern wireless communic
 
 ---
 
-## 🗓️ 12-Week Project Timeline – Water Level Monitoring System
 
-| **Week** | **Tasks** |
-|----------|-----------|
-| **Week 1** | • Finalize the project idea and use case.<br>• Define high-level objectives (e.g., monitor, alert, transmit water level). |
-| **Week 2** | • Research existing water level monitoring systems.<br>• Identify real-world issues with data transmission and alerting. |
-| **Week 3** | • Research affordable and reliable components (e.g., sensors, ESP32, NB-IoT modules).<br>• Compare alternatives based on cost, power usage, and compatibility. |
-| **Week 4** | • Select and finalize components based on Week 3 findings.<br>• Create a detailed block diagram and system design. |
-| **Week 5** | • Begin testing selected components individually (sensor, ESP32, buzzer, NB-IoT module).<br>• Test basic connectivity and data reading. |
-| **Week 6** | • Develop water level detection logic on ESP32.<br>• Add buzzer activation for alert conditions. |
-| **Week 7** | • Set up and test communication between ESP32 and NB-IoT module using AT commands.<br>• Format sensor data for transmission. |
-| **Week 8** | • Develop or simulate backend endpoint (cloud/server).<br>• Send test data from ESP32 via NB-IoT to destination. |
-| **Week 9** | • Integrate all parts: water level sensing + logic + buzzer + NB-IoT transmission.<br>• Add failure detection and retries. |
-| **Week 10** | • Design enclosure for components (weatherproof if needed).<br>• Power supply planning and integration. |
-| **Week 11** | • Field testing in real environment (e.g., water tank).<br>• Adjust thresholds and calibrate sensors. |
-| **Week 12** | • Final debugging and optimization.<br>• Document the system, update README, and prepare presentation/demo. |
 
 
 ## Hardware Components
@@ -110,23 +95,16 @@ While several microcontrollers are suitable for embedded IoT applications, this 
 ---
 
 
-## 🗓️ 12-Week Project Timeline – Water Level Monitoring System
+## 🗓️ Project Plan – Water Level Monitoring System
 
 | **Week** | **Tasks** |
-|----------|-----------|
-| **Week 1** | • Finalize project scope and objectives.<br>• Research existing water level monitoring systems and decide on technologies (ESP32, NB-IoT, etc.). |
-| **Week 2** | • Select components: sensors, ESP32, NB-IoT module, buzzer, power unit.<br>• Procure required hardware. |
-| **Week 3** | • Test individual components: water level sensor, ESP32, buzzer.<br>• Blink test and serial output checks. |
-| **Week 4** | • Set up serial communication between ESP32 and NB-IoT module (e.g., AT commands).<br>• Test basic data send. |
-| **Week 5** | • Integrate water level sensor with ESP32.<br>• Read and filter sensor data (analog/digital). |
-| **Week 6** | • Implement water level logic (e.g., critical levels).<br>• Add buzzer control for alerts. |
-| **Week 7** | • Develop firmware to send data via NB-IoT.<br>• Format sensor data (JSON/CSV) for transmission. |
-| **Week 8** | • Set up cloud endpoint or test server (optional).<br>• Connect NB-IoT output to destination. |
-| **Week 9** | • Perform system integration test: sensor → ESP32 → NB-IoT → cloud + buzzer alert.<br>• Add failure handling. |
-| **Week 10** | • Design and build system casing/enclosure.<br>• Ensure protection against water/weather. |
-| **Week 11** | • Deploy in real environment (e.g., water tank).<br>• Monitor data and performance. |
-| **Week 12** | • Final testing and optimization.<br>• Write documentation, finalize README, and prepare for demo. |
-
+|----------|----------|
+| **Week 1** | • Finalize the project idea and use case.<br>• Define high-level objectives (e.g., monitor, alert, transmit water level). |
+| **Week 2** | • Reword “Read research papers” → **“Read 2–3 key research papers on wireless water level systems, especially focusing on cellular communication limitations, delay, and rural deployment challenges.”** |
+| **Week 3** | • Make a **comparison table** for different sensor types (e.g., ultrasonic vs. float vs. pressure), cellular modules (e.g., SIM7000 vs. EC-01), and their compatibility with ESP32. |
+| **Week 4** | • Along with block diagram and system design, **start drawing simple circuit diagrams** to speed up hardware testing in Week 5. |
+| **Week 5** | • While testing each component, also **log power consumption** of sensors, ESP32, and the cellular module.<br>• This data will help design power management in Week 10. |
+| **Week 6** | • Use **threshold-based logic** for water levels (e.g., LOW, MEDIUM, HIGH).<br>• Simulate different water levels to validate buzzer triggers.<br>• Start modularizing the code for clarity. |
 
 ## Future Enhancements
 
