@@ -2,7 +2,7 @@
 Affordable, maintainable river water level gauge with Alert System
 
 
-![System Architecture](assets/system-architecture.png)
+![System Architecture](assets/system-higiLevel_architecture.png)
 
 ## Project Summary
 
