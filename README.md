@@ -4,123 +4,70 @@ Affordable, maintainable river water level gauge with Alert System
 
 ![System Architecture](assets/system-higiLevel_architecture.png)
 
-## Project Summary
-
-This project presents a cost-effective and maintainable river water level monitoring and alert system. It is specifically designed for deployment in remote or rural areas where conventional solutions are either too expensive, require complex maintenance, or rely heavily on satellite communication.
+This project presents a cost-effective and maintainable river water level monitoring and alert system. It is specifically designed for deployment in remote or rural areas where conventional solutions are too expensive, require complex maintenance, or rely heavily on satellite communication.
 
 The system uses a combination of low-power hardware and modern wireless communication technologies to continuously monitor water levels and issue alerts when thresholds are exceeded.
 
 ---
 
+## Problem Statement
+
+In many rural regions, communities suffer from a lack of early warning systems for floods or droughts. Manual monitoring is inefficient and unreliable, and existing systems are often:
+
+- Too expensive
+- Dependent on strong internet connectivity
+- Complex to maintain and operate
+
+---
+
 ## Objectives
 
-- Develop a reliable, low-cost system for real-time river water level monitoring.
-- Reduce dependency on high-maintenance and high-cost systems.
-- Enable location-tagged data reporting through GPS.
-- Provide local (on-site) alerts and remote alerts via MQTT.
-- Ensure suitability for harsh, moisture-prone environments.
+- Measure river water levels in real time  
+- Show the current water level relative to a defined normal level  
+- Provide alerts when water levels reach critical thresholds  
+- Log and visualize data on a cloud dashboard  
+- Ensure the system is low-power and suitable for remote deployments  
+- Maintain a low-cost, easy-to-maintain design  
+
+---
+
+## Solution Overview
+
+The system comprises:
+
+- **Sensor Unit**: Ultrasonic sensor mounted facing the river to measure water levels based on distance  
+- **Microcontroller**: ESP32 reads sensor data and manages communication  
+- **Communication Module**: Data sent via LoRa or Cellular, depending on availability  
+- **Cloud Integration**: Real-time data uploaded for monitoring and analytics  
+- **Alert System**: Threshold-based alerts (LOW, MEDIUM, HIGH) via web application and buzzer  
+
+---
+
+## Deployment Scenario
+
+The system is installed beside a river or on a bridge, with the ultrasonic sensor facing downward toward the water surface. The MCU reads the water level and temperature sensor data using one or two Sensors then get calculate average from that  multiple readings for accuracy, and applies temperature correction.
+
+Data is transmitted using the LoRa protocol to a central MCU(ESP32), which then connects to Wi-Fi and sends the data to the server using MQTT. The server processes the data, visualizes it, and sends notifications to users.
+
+The device is battery-powered for off-grid use, enclosed in a weatherproof housing. Future versions include a solar panel for sustainable charging.
 
 ---
 
 ## Key Features
 
-- Real-time river water level monitoring
-- Location tagging using GPS
-- Low-power NB-IoT-based cellular communication
-- MQTT-based data publishing
-- On-site audio alert system (buzzer/speaker)
-- Compatibility with mobile and cloud-based dashboards
-- Waterproof ultrasonic sensor suitable for outdoor environments
+- Real-time water level monitoring  
+- Cloud dashboard integration  
+- Alert system for flood and overflow conditions  
+- Energy-efficient and robust for outdoor use  
+- Cost-effective and easy to deploy  
 
 ---
 
+## Impact
 
+This project aims to:
 
+- Improve preparedness for water-related disasters in rural areas  
+- Enable remote monitoring and early warning systems  
+- Reduce costs compared to traditional telemetry or satellite-based systems  
 
-## Hardware Components
-
-| Component                         | Description                                                         |
-|----------------------------------|----------------------------------------------------------------------|
-| ESP32 Microcontroller            | Main controller for logic, sensor reading, and serial communication  |
-| A02YYUW Ultrasonic Sensor        | Waterproof, accurate distance measurement                            |
-| NB-IoT Module (e.g., SIM7020)    | Cellular communication using MQTT protocol                           |
-| GPS Module (e.g., NEO-M8N)       | Provides station location data                                       |
-| Buzzer or Speaker                | Provides audible alerts for high water levels                        |
-| Power Supply                     | Rechargeable battery, optionally solar powered                       |
-
----
-## Why ESP32?
-
-While several microcontrollers are suitable for embedded IoT applications, this project uses the **ESP32** (without Wi-Fi/BLE) for several important reasons:
-
-### Benefits of Using ESP32:
-
-- **Dual-core processor** (Tensilica Xtensa LX6) → allows concurrent tasks (e.g., sensor polling + NB-IoT communication)
-- **More Flash/RAM** than STM32 Blue Pill → easier for MQTT, GPS parsing, sensor filtering
-- **Supports multiple UARTs** → useful when using GPS, NB-IoT module, and debugging over serial
-- **Good development ecosystem** → widely supported in Arduino and ESP-IDF environments
-- **Lower development time** due to rich libraries and community support
-
----
-
-## System Architecture
-
-1. The ESP32 reads water level data from the ultrasonic sensor.
-2. The water level is calculated relative to a defined normal threshold.
-3. If the level exceeds the threshold:
-   - An on-site buzzer or speaker is activated.
-   - Data is sent via MQTT using the NB-IoT module.
-4. GPS coordinates are attached to each data packet.
-5. A remote dashboard or app can visualize and monitor data in real time.
-
----
-
-## Technical Advantages
-
-- Uses NB-IoT for low power, long-range, and cost-efficient data transmission.
-- MQTT protocol allows lightweight communication ideal for IoT applications.
-- GPS-based station identification enables support for multiple monitoring sites.
-- Waterproof sensor ensures durability in high-moisture outdoor environments.
-- ESP32 allows easy firmware development and wireless integration.
-
----
-
-## Application Scenarios
-
-- River and canal monitoring for flood-prone areas
-- Water level logging for environmental agencies
-- Smart agriculture and irrigation control
-- Early warning systems for disaster management
-
----
-
-
-## 🗓️ Project Plan – Water Level Monitoring System
-
-| **Week** | **Tasks** |
-|----------|----------|
-| **Week 1** | • Finalize the project idea and use case.<br>• Define high-level objectives (e.g., monitor, alert, transmit water level). |
-| **Week 2** | • Reword “Read research papers” → **“Read 2–3 key research papers on wireless water level systems, especially focusing on cellular communication limitations, delay, and rural deployment challenges.”** |
-| **Week 3** | • Make a **comparison table** for different sensor types (e.g., ultrasonic vs. float vs. pressure), cellular modules (e.g., SIM7000 vs. EC-01), and their compatibility with ESP32. |
-| **Week 4** | • Along with block diagram and system design, **start drawing simple circuit diagrams** to speed up hardware testing in Week 5. |
-| **Week 5** | • While testing each component, also **log power consumption** of sensors, ESP32, and the cellular module.<br>• This data will help design power management in Week 10. |
-| **Week 6** | • Use **threshold-based logic** for water levels (e.g., LOW, MEDIUM, HIGH).<br>• Simulate different water levels to validate buzzer triggers.<br>• Start modularizing the code for clarity. |
-
-## Future Enhancements
-
-- Integration with solar charging for full off-grid capability
-- Cloud-based historical data logging and analytics
-- SMS alert integration using GSM fallback
-- Real-time map-based dashboard with station statuses
-
----
-
-## License
-
-This project is released under the MIT License. You are free to use, modify, and distribute this software with proper attribution.
-
----
-
-## Author
-
-[Rashmika Naveen]  
