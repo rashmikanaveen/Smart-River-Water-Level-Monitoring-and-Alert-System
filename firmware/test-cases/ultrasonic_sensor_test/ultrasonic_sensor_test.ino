@@ -1,38 +1,38 @@
-#define TRIG_PIN 5
-#define ECHO_PIN 18
-#define MAX_DISTANCE 400
-#define TIMEOUT_US (MAX_DISTANCE * 58)
+#define echoPin 18
+#define trigPin 5
+
+long duration;
+int distance;
+int lastValidDistance = 0;
 
 void setup() {
-  Serial.begin(115200);
-  pinMode(TRIG_PIN, OUTPUT);
-  pinMode(ECHO_PIN, INPUT);
-  digitalWrite(TRIG_PIN, LOW);
+  pinMode(trigPin, OUTPUT); 
+  pinMode(echoPin, INPUT);  
+  Serial.begin(9600);
 }
 
 void loop() {
-  digitalWrite(TRIG_PIN, LOW);
-  delay(1); // 1ms instead of 2 microseconds
-  
-  digitalWrite(TRIG_PIN, HIGH);
-  delayMicroseconds(10); // Keep this as microseconds - it's critical
-  digitalWrite(TRIG_PIN, LOW);
-  
-  long duration = pulseIn(ECHO_PIN, HIGH, TIMEOUT_US);
-  
-  if (duration == 0) {
-    Serial.println("Distance: No echo received");
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2); 
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10); 
+  digitalWrite(trigPin, LOW);
+
+  duration = pulseIn(echoPin, HIGH, 30000);
+  distance = duration * 0.0344 / 2;
+
+  if (distance > 2 && distance < 500) {
+    // Accept the value and update last valid
+    lastValidDistance = distance;
+    Serial.print("Distance: ");
+    Serial.print(distance);
+    Serial.println(" cm");
   } else {
-    float distance_cm = duration * 0.034 / 2;
-    
-    if (distance_cm > 2 && distance_cm < MAX_DISTANCE) {
-      Serial.print("Distance: ");
-      Serial.print(distance_cm);
-      Serial.println(" cm");
-    } else {
-      Serial.println("Distance: Invalid reading");
-    }
+    // Use previous good value
+    Serial.print("Distance (smoothed): ");
+    Serial.print(lastValidDistance);
+    Serial.println(" cm (reused)");
   }
-  
-  delay(1500);
+
+  delay(300);
 }
