@@ -33,7 +33,6 @@ In many rural regions, communities suffer from a lack of early warning systems f
 
 ## Solution Overview
 
-The system comprises:
 
 - **Sensor Unit**: Ultrasonic sensor mounted facing the river to measure water levels based on distance  
 - **Microcontroller**: ESP32 reads sensor data and manages communication  
@@ -65,7 +64,6 @@ The device is battery-powered for off-grid use, enclosed in a weatherproof housi
 
 ## Impact
 
-This project aims to:
 
 - Improve preparedness for water-related disasters in rural areas  
 - Enable remote monitoring and early warning systems  
