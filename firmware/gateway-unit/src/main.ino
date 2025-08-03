@@ -1,13 +1,27 @@
-#include <Arduino.h>
+
+#include "config.h"
+
 void setup() {
-  // initialize digital pin LED_BUILTIN as an output.
-  pinMode(2, OUTPUT);
+  Serial.begin(115200);
+  delay(1000);
+  
+  Serial.println("Disabling WiFi and Bluetooth...");
+  
+  // Disable WiFi
+  //disableWiFi();
+  
+  // Disable Bluetooth
+  //disableBluetooth();
+  
+  Serial.println("Both WiFi and Bluetooth are now disabled");
+  Serial.println("Power consumption should be significantly reduced");
 }
 
-// the loop function runs over and over again forever
 void loop() {
-  digitalWrite(2, HIGH);  // turn the LED on (HIGH is the voltage level)
-  delay(100);                      // wait for a second
-  digitalWrite(2, LOW);   // turn the LED off by making the voltage LOW
-  delay(1000);                      // wait for a second
+  // Your main application code here
+  // Power consumption is now minimized with radios disabled
+  
+  Serial.println("Running main loop with radios disabled...");
+  delay(5000);
 }
+

@@ -44,21 +44,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Filter Toggle */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Switch id="show-rising" checked={showOnlyRising} onCheckedChange={setShowOnlyRising} />
-              <Label htmlFor="show-rising" className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                Show Rising Levels Only
-              </Label>
-            </div>
-            <Badge variant="outline">{filteredUnits.length} Units Active</Badge>
-          </div>
-        </CardContent>
-      </Card>
+      
 
       {/* Units Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

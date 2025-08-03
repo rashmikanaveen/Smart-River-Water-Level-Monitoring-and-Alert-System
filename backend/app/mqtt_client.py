@@ -5,7 +5,7 @@ import asyncio
 
 mqtt_client = MQTTClient("digital-farm-backend")
 
-TOPICS = ["rashmikanaveen-mqtt-Test", "rashmikapico2", "farm/humidity"]
+TOPICS = ["rashmikanaveen-mqtt-Test", "rashmikapico2", "Distance"]
 
 async def connect_mqtt(loop):
     mqtt_client.on_connect = on_connect
@@ -22,6 +22,7 @@ def on_connect(client, flags, rc, properties):
         client.subscribe(topic)
 
 def on_message(client, topic, payload, qos, properties):
+    
     print(f"📡 [{topic}] {payload.decode()}")
 
 

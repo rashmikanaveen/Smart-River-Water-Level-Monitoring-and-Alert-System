@@ -1,63 +1,94 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#define echoPin 18
-#define trigPin 5
+#define echoPin 25
+#define trigPin 33
 //#define tempPin 4
 
-// JSN-SR04T specific constants
-const float SENSOR_HEIGHT = 200.0; // Height of sensor above riverbed (cm)
-const float MIN_WATER_LEVEL = 200.0; // Minimum expected water level (cm)
-const float MAX_WATER_LEVEL = 590.0; // Maximum expected water level (cm)
-const float MIN_DISTANCE = 25.0; // JSN-SR04T minimum distance (25cm)
-const float MAX_DISTANCE = 600.0; // JSN-SR04T maximum distance (6m)
+// JSN-SR04T constants - DISTANCE ONLY
+const float MIN_DISTANCE = 30.0; // JSN-SR04T minimum distance (30cm)
+const float MAX_DISTANCE = 570.0; // JSN-SR04T maximum distance (5.7m)
 
 //OneWire oneWire(tempPin);
 //DallasTemperature tempSensor(&oneWire);
 
-class WaterLevelKalman {
+class ImprovedDistanceKalman {
 private:
     float Q, R, P, K, X;
     float lastGoodMeasurement;
     unsigned long lastUpdateTime;
     int consecutiveInvalidReadings;
+    float innovation; // Innovation (measurement residual)
+    int measurementCount;
     
 public:
-    WaterLevelKalman() {
-        Q = 0.1;   
-        R = 2.0;   
-        P = 10.0;  
-        X = SENSOR_HEIGHT / 2; 
+    ImprovedDistanceKalman() {
+        // TUNED parameters for JSN-SR04T
+        Q = 0.05;  // Lower process noise - distances change slowly
+        R = 1.5;   // Lower measurement noise - JSN-SR04T is quite accurate
+        P = 5.0;   // Lower initial uncertainty
+        X = 300.0; // Better initial estimate (3m)
         lastGoodMeasurement = X;
         lastUpdateTime = millis();
         consecutiveInvalidReadings = 0;
+        innovation = 0.0;
+        measurementCount = 0;
     }
     
-    float updateWaterLevel(float sensorDistance) {
-        // Convert sensor distance to water level
-        float waterLevel = SENSOR_HEIGHT - sensorDistance;
+    float updateDistance(float rawDistance) {
+        // Enhanced validation with trend checking
+        bool isValidDistance = (rawDistance >= MIN_DISTANCE && rawDistance <= MAX_DISTANCE);
         
-        // Enhanced validation for JSN-SR04T
-        bool isValidDistance = (sensorDistance >= MIN_DISTANCE && sensorDistance <= MAX_DISTANCE);
-        bool isValidWaterLevel = (waterLevel >= MIN_WATER_LEVEL && waterLevel <= MAX_WATER_LEVEL);
+        // Check for reasonable change rate (max 50cm change per second)
+        unsigned long currentTime = millis();
+        float timeDiff = (currentTime - lastUpdateTime) / 1000.0; // seconds
+        float maxChange = 50.0 * timeDiff; // 50cm/s max change
         
-        if (isValidDistance && isValidWaterLevel) {
-            // Valid measurement - apply Kalman filter
+        bool isReasonableChange = true;
+        if (measurementCount > 0) {
+            float changeMagnitude = abs(rawDistance - lastGoodMeasurement);
+            isReasonableChange = (changeMagnitude <= maxChange || timeDiff > 5.0);
+        }
+        
+        if (isValidDistance && isReasonableChange) {
+            // Calculate innovation
+            innovation = rawDistance - X;
+            
+            // Adaptive noise based on innovation
+            if (abs(innovation) > 20.0) {
+                // Large innovation - increase measurement noise temporarily
+                R = 3.0;
+            } else if (abs(innovation) < 5.0) {
+                // Small innovation - trust measurement more
+                R = 1.0;
+            } else {
+                R = 1.5; // Default
+            }
+            
+            // Kalman filter equations
             P = P + Q;
             K = P / (P + R);
-            X = X + K * (waterLevel - X);
+            X = X + K * innovation;
             P = (1 - K) * P;
             
             lastGoodMeasurement = X;
-            lastUpdateTime = millis();
+            lastUpdateTime = currentTime;
             consecutiveInvalidReadings = 0;
+            measurementCount++;
             return X;
         } else {
             // Invalid measurement
             consecutiveInvalidReadings++;
             
+            Serial.print("REJECTED: Distance=");
+            Serial.print(rawDistance);
+            Serial.print(", Valid=");
+            Serial.print(isValidDistance);
+            Serial.print(", Reasonable=");
+            Serial.println(isReasonableChange);
+            
             // If too many consecutive invalid readings, reset filter
-            if (consecutiveInvalidReadings > 10) {
+            if (consecutiveInvalidReadings > 15) {
                 resetFilter();
                 consecutiveInvalidReadings = 0;
             }
@@ -67,62 +98,79 @@ public:
     }
     
     void resetFilter() {
-        P = 10.0;
-        X = SENSOR_HEIGHT / 2;
+        P = 5.0;
+        Q = 0.05;
+        R = 1.5;
+        X = 300.0; // Reset to 3m distance
         lastGoodMeasurement = X;
+        measurementCount = 0;
+        Serial.println("FILTER RESET!");
     }
     
-    float getCurrentLevel() { return X; }
+    float getCurrentDistance() { return X; }
     float getKalmanGain() { return K; }
-    bool isStable() { return K < 0.05; }
+    float getInnovation() { return innovation; }
+    bool isStable() { return (K < 0.02 && measurementCount > 10); } // More strict
     int getInvalidCount() { return consecutiveInvalidReadings; }
+    int getMeasurementCount() { return measurementCount; }
+    
+    // Get filter confidence (0-100%)
+    float getConfidence() {
+        if (measurementCount < 5) return 0.0;
+        float confidence = 100.0 * (1.0 - K);
+        return min(confidence, 100.0f);
+    }
 };
 
-WaterLevelKalman waterFilter;
+ImprovedDistanceKalman distanceFilter;
 
-// JSN-SR04T specific measurement function
+// Enhanced JSN-SR04T measurement function
 float getJSNDistance() {
-    // JSN-SR04T needs longer trigger pulse and timeout
-    digitalWrite(trigPin, LOW);
-    delayMicroseconds(5);
-    digitalWrite(trigPin, HIGH);
-    delayMicroseconds(20); // Longer trigger for JSN-SR04T
-    digitalWrite(trigPin, LOW);
-    
-    // Longer timeout for JSN-SR04T (up to 6m range)
-    unsigned long duration = pulseIn(echoPin, HIGH, 40000); // 40ms timeout
-    
-    if (duration == 0) {
-        return -1; // Timeout occurred
+    // Multiple pulse attempt for better reliability
+    for (int attempt = 0; attempt < 3; attempt++) {
+        digitalWrite(trigPin, LOW);
+        delayMicroseconds(5);
+        digitalWrite(trigPin, HIGH);
+        delayMicroseconds(20);
+        digitalWrite(trigPin, LOW);
+        
+        unsigned long duration = pulseIn(echoPin, HIGH, 50000);
+        
+        if (duration > 0) {
+            float distance = (duration * 0.0343) / 2.0;
+            // Quick sanity check
+            if (distance >= 10.0 && distance <= 600.0) {
+                return distance;
+            }
+        }
+        
+        delay(10); // Small delay before retry
     }
     
-    // Calculate distance using speed of sound (343 m/s at 20°C)
-    float distance = (duration * 0.0343) / 2.0;
-    
-    return distance;
+    return -1; // All attempts failed
 }
 
-// Function to get multiple readings and return median for JSN-SR04T
-float getMedianDistance(int samples = 3) {
+// Enhanced median filter with outlier rejection
+float getMedianDistance(int samples = 3) { // Reduced samples for faster response
     float readings[samples];
     int validReadings = 0;
     
     for (int i = 0; i < samples; i++) {
         float distance = getJSNDistance();
         
-        if (distance > 0 && distance >= MIN_DISTANCE && distance <= MAX_DISTANCE) {
+        if (distance > 0) {
             readings[validReadings] = distance;
             validReadings++;
         }
         
-        delay(100); // JSN-SR04T needs more time between readings
+        delay(100); // Reduced delay
     }
     
     if (validReadings == 0) {
-        return -1; // No valid readings
+        return -1;
     }
     
-    // Sort readings to find median
+    // Sort readings
     for (int i = 0; i < validReadings - 1; i++) {
         for (int j = 0; j < validReadings - i - 1; j++) {
             if (readings[j] > readings[j + 1]) {
@@ -141,11 +189,14 @@ void setup() {
     pinMode(trigPin, OUTPUT); 
     pinMode(echoPin, INPUT);  
     Serial.begin(115200);
-    delay(2000); // Give JSN-SR04T time to initialize
+    delay(2000);
     
-    Serial.println("JSN-SR04T Water Level Monitoring with Kalman Filter");
-    Serial.println("===================================================");
-    Serial.println("Time(s)\tTemp(°C)\tRaw Distance(cm)\tFiltered Distance(cm)\tWater Level(cm)\tStatus\t\tGain");
+    Serial.println("Improved JSN-SR04T Distance Monitoring with Tuned Kalman Filter");
+    Serial.println("================================================================");
+    Serial.println("Distance Range: 30cm - 570cm");
+    Serial.println("Filter: Q=0.05, R=1.5, P=5.0");
+    Serial.println();
+    Serial.println("Time(s)\tRaw(cm)\tFiltered(cm)\tInnovation\tGain\tConfidence%\tStatus");
     
     // Test sensor connectivity
     Serial.println("Testing JSN-SR04T sensor...");
@@ -154,6 +205,9 @@ void setup() {
         Serial.print("Sensor OK - Initial reading: ");
         Serial.print(testDist);
         Serial.println(" cm");
+        
+        // Initialize filter with first reading
+        distanceFilter.updateDistance(testDist);
     } else {
         Serial.println("Warning: No response from sensor!");
     }
@@ -161,56 +215,50 @@ void setup() {
 }
 
 void loop() {
-    float temperature = 25.0; // Simulated temperature
-    
-    // Get single raw reading for comparison
-    float rawDistance = getJSNDistance();
-    
     // Get median distance from multiple readings
-    float filteredDistance = getMedianDistance(3);
+    float rawDistance = getMedianDistance(3);
     
-    if (filteredDistance < 0) {
+    if (rawDistance < 0) {
         Serial.print(millis()/1000);
         Serial.print("\t");
-        Serial.print(temperature, 1);
+        Serial.print("NO_ECHO");
         Serial.print("\t");
-        Serial.print("NO_ECHO");
-        Serial.print("\t\t\t");
-        Serial.print("NO_ECHO");
-        Serial.print("\t\t\t");
-        Serial.print(waterFilter.getCurrentLevel(), 2);
+        Serial.print(distanceFilter.getCurrentDistance(), 2);
         Serial.print("\t\t");
-        Serial.print("ERROR");
+        Serial.print("---");
         Serial.print("\t\t");
-        Serial.println(waterFilter.getKalmanGain(), 4);
+        Serial.print(distanceFilter.getKalmanGain(), 4);
+        Serial.print("\t");
+        Serial.print(distanceFilter.getConfidence(), 1);
+        Serial.print("\t\t");
+        Serial.println("ERROR");
         
         delay(2000);
         return;
     }
     
-    // Update water level with Kalman filter
-    float waterLevel = waterFilter.updateWaterLevel(filteredDistance);
+    // Update distance with Kalman filter
+    float kalmanDistance = distanceFilter.updateDistance(rawDistance);
     
-    // Print results with detailed information
+    // Print detailed results
     Serial.print(millis()/1000);
     Serial.print("\t");
-    Serial.print(temperature, 1);
-    Serial.print("\t\t");
     Serial.print(rawDistance, 2);
-    Serial.print("\t\t\t");
-    Serial.print(filteredDistance, 2);
-    Serial.print("\t\t\t");
-    Serial.print(waterLevel, 2);
+    Serial.print("\t");
+    Serial.print(kalmanDistance, 2);
+    Serial.print("\t\t");
+    Serial.print(distanceFilter.getInnovation(), 2);
+    Serial.print("\t\t");
+    Serial.print(distanceFilter.getKalmanGain(), 4);
+    Serial.print("\t");
+    Serial.print(distanceFilter.getConfidence(), 1);
     Serial.print("\t\t");
     
-    if (waterFilter.isStable()) {
-        Serial.print("STABLE");
+    if (distanceFilter.isStable()) {
+        Serial.println("STABLE");
     } else {
-        Serial.print("LEARNING");
+        Serial.println("LEARNING");
     }
     
-    Serial.print("\t\t");
-    Serial.println(waterFilter.getKalmanGain(), 4);
-    
-    delay(2000); // JSN-SR04T works better with longer intervals
+    delay(1500); // Faster sampling for better tracking
 }

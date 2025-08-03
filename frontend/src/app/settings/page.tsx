@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { SettingsIcon, Edit, Save, Check, X } from "lucide-react"
+import { SettingsIcon, Edit, Save, Check, X, Plus } from "lucide-react"
 import { getStatusColor } from "@/lib/utils"
 import { useUnitContext } from "@/context/unit-context"
 import type { Unit } from "@/types"
@@ -24,7 +24,7 @@ export default function SettingsPage() {
     updateUnitName,
   } = useUnitContext()
   const [editingLevels, setEditingLevels] = useState<{
-    [key: string]: { warning: number; high: number; critical: number }
+    [key: string]: { warning: number; high: number; critical: number } | undefined
   }>({})
 
   const initializeEditing = (unit: Unit) => {
@@ -38,7 +38,7 @@ export default function SettingsPage() {
     setEditingLevels((prev) => ({
       ...prev,
       [unitId]: {
-        ...prev[unitId],
+        ...(prev[unitId] || { warning: 0, high: 0, critical: 0 }),
         [level]: Number.parseFloat(value) || 0,
       },
     }))
@@ -62,12 +62,20 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <SettingsIcon className="h-6 w-6" />
-            Water Level Alert Settings
-          </CardTitle>
-          <CardDescription>Configure warning thresholds and rename units</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <SettingsIcon className="h-6 w-6" />
+              Water Level Alert Settings
+            </CardTitle>
+            <CardDescription>Configure warning thresholds and rename units</CardDescription>
+          </div>
+          <div className="p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
+            <Button className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add Unit
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-8">
@@ -165,6 +173,21 @@ export default function SettingsPage() {
                             className="mt-2"
                           />
                           <p className="text-sm text-gray-500 mt-1">Critical alert threshold</p>
+                        </div>
+                        <div>
+                          <Label htmlFor={`warning-${unit.id}`} className="font-medium">
+                            Rename
+                          </Label>
+                          <Input
+                            id={`rename-${unit.id}`}
+                            placeholder="New unit name"
+                            autoFocus
+                            disabled={editingName === unit.id}
+                            type="text"
+                            
+                            className="mt-2"
+                          />
+                          <p className="text-sm text-gray-500 mt-1">First alert threshold</p>
                         </div>
                       </div>
 
