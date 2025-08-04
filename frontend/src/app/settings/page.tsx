@@ -30,7 +30,7 @@ export default function SettingsPage() {
   const initializeEditing = (unit: Unit) => {
     setEditingLevels((prev) => ({
       ...prev,
-      [unit.id]: { ...unit.alertLevels },
+      [unit.unit_id]: { ...unit.alertLevels },
     }))
   }
 
@@ -52,7 +52,7 @@ export default function SettingsPage() {
   }
 
   const handleStartRenaming = (unit: Unit) => {
-    startRenaming(unit.id, unit.name)
+    startRenaming(unit.unit_id, unit.name)
   }
 
   const handleSaveRenaming = (unitId: string) => {
@@ -80,24 +80,24 @@ export default function SettingsPage() {
         <CardContent>
           <div className="space-y-8">
             {units.map((unit: Unit) => (
-              <Card key={unit.id}>
+              <Card key={unit.unit_id}>
                 <CardContent className="p-6">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6">
                     <div className="mb-4 lg:mb-0">
                       <div className="flex items-center gap-3 mb-2">
-                        {editingName === unit.id ? (
+                        {editingName === unit.unit_id ? (
                           <div className="flex items-center gap-2">
                             <Input
                               value={tempName}
                               onChange={(e) => setTempName(e.target.value)}
                               className="text-xl font-semibold"
                               onKeyDown={(e) => {
-                                if (e.key === "Enter") handleSaveRenaming(unit.id)
+                                if (e.key === "Enter") handleSaveRenaming(unit.unit_id)
                                 if (e.key === "Escape") cancelRenaming()
                               }}
                               autoFocus
                             />
-                            <Button size="sm" onClick={() => handleSaveRenaming(unit.id)}>
+                            <Button size="sm" onClick={() => handleSaveRenaming(unit.unit_id)}>
                               <Check className="h-4 w-4" />
                             </Button>
                             <Button size="sm" variant="outline" onClick={cancelRenaming}>
@@ -114,75 +114,75 @@ export default function SettingsPage() {
                         )}
                       </div>
                       <p className="text-gray-600 mt-1">
-                        {unit.id} • {unit.location}
+                        {unit.unit_id} • {unit.location}
                       </p>
                       <div className="flex items-center gap-3 mt-2">
-                        <span>Current: {unit.currentLevel.toFixed(2)}m</span>
+                        <span>Current: {4}m</span>
                         <Badge variant={getStatusColor(unit.status)}>{unit.status.toUpperCase()}</Badge>
                       </div>
                     </div>
-                    <Button onClick={() => initializeEditing(unit)} disabled={!!editingLevels[unit.id]}>
+                    <Button onClick={() => initializeEditing(unit)} disabled={!!editingLevels[unit.unit_id]}>
                       <SettingsIcon className="h-4 w-4 mr-2" />
                       Configure Alerts
                     </Button>
                   </div>
 
-                  {editingLevels[unit.id] ? (
+                  {editingLevels[unit.unit_id] ? (
                     <div className="space-y-6 p-6 bg-gray-50 rounded-xl">
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div>
-                          <Label htmlFor={`warning-${unit.id}`} className="font-medium">
+                          <Label htmlFor={`warning-${unit.unit_id}`} className="font-medium">
                             Warning Level (m)
                           </Label>
                           <Input
-                            id={`warning-${unit.id}`}
+                            id={`warning-${unit.unit_id}`}
                             type="number"
                             step="0.01"
-                            value={editingLevels[unit.id]?.warning || unit.alertLevels.warning}
-                            onChange={(e) => handleLevelChange(unit.id, "warning", e.target.value)}
+                            value={editingLevels[unit.unit_id]?.warning || unit.alertLevels.warning}
+                            onChange={(e) => handleLevelChange(unit.unit_id, "warning", e.target.value)}
                             className="mt-2"
                           />
                           <p className="text-sm text-gray-500 mt-1">First alert threshold</p>
                         </div>
 
                         <div>
-                          <Label htmlFor={`high-${unit.id}`} className="font-medium">
+                          <Label htmlFor={`high-${unit.unit_id}`} className="font-medium">
                             High Level (m)
                           </Label>
                           <Input
-                            id={`high-${unit.id}`}
+                            id={`high-${unit.unit_id}`}
                             type="number"
                             step="0.01"
-                            value={editingLevels[unit.id]?.high || unit.alertLevels.high}
-                            onChange={(e) => handleLevelChange(unit.id, "high", e.target.value)}
+                            value={editingLevels[unit.unit_id]?.high || unit.alertLevels.high}
+                            onChange={(e) => handleLevelChange(unit.unit_id, "high", e.target.value)}
                             className="mt-2"
                           />
                           <p className="text-sm text-gray-500 mt-1">High alert threshold</p>
                         </div>
 
                         <div>
-                          <Label htmlFor={`critical-${unit.id}`} className="font-medium">
+                          <Label htmlFor={`critical-${unit.unit_id}`} className="font-medium">
                             Critical Level (m)
                           </Label>
                           <Input
-                            id={`critical-${unit.id}`}
+                            id={`critical-${unit.unit_id}`}
                             type="number"
                             step="0.01"
-                            value={editingLevels[unit.id]?.critical || unit.alertLevels.critical}
-                            onChange={(e) => handleLevelChange(unit.id, "critical", e.target.value)}
+                            value={editingLevels[unit.unit_id]?.critical || unit.alertLevels.critical}
+                            onChange={(e) => handleLevelChange(unit.unit_id, "critical", e.target.value)}
                             className="mt-2"
                           />
                           <p className="text-sm text-gray-500 mt-1">Critical alert threshold</p>
                         </div>
                         <div>
-                          <Label htmlFor={`warning-${unit.id}`} className="font-medium">
+                          <Label htmlFor={`warning-${unit.unit_id}`} className="font-medium">
                             Rename
                           </Label>
                           <Input
-                            id={`rename-${unit.id}`}
+                            id={`rename-${unit.unit_id}`}
                             placeholder="New unit name"
                             autoFocus
-                            disabled={editingName === unit.id}
+                            disabled={editingName === unit.unit_id}
                             type="text"
                             
                             className="mt-2"
@@ -192,13 +192,13 @@ export default function SettingsPage() {
                       </div>
 
                       <div className="flex gap-3">
-                        <Button onClick={() => handleSaveAlertLevels(unit.id)} className="flex items-center gap-2">
+                        <Button onClick={() => handleSaveAlertLevels(unit.unit_id)} className="flex items-center gap-2">
                           <Save className="h-4 w-4" />
                           Save Changes
                         </Button>
                         <Button
                           variant="outline"
-                          onClick={() => setEditingLevels((prev) => ({ ...prev, [unit.id]: undefined }))}
+                          onClick={() => setEditingLevels((prev) => ({ ...prev, [unit.unit_id]: undefined }))}
                         >
                           Cancel
                         </Button>

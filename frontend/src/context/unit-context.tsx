@@ -33,9 +33,9 @@ export const UnitProvider = ({ children }: { children: ReactNode }) => {
   const { editingName, tempName, setTempName, startRenaming, cancelRenaming, saveRenaming } = useUnitRenaming()
 
   const updateUnit = (unitId: string, updates: Partial<Unit>) => {
-    setUnits((prevUnits) => prevUnits.map((unit) => (unit.id === unitId ? { ...unit, ...updates } : unit)))
+    setUnits((prevUnits) => prevUnits.map((unit) => (unit.unit_id === unitId ? { ...unit, ...updates } : unit)))
 
-    if (selectedUnit.id === unitId) {
+    if (selectedUnit.unit_id === unitId) {
       setSelectedUnit((prevSelected) => ({ ...prevSelected, ...updates }))
     }
   }

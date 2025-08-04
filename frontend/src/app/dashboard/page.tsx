@@ -34,13 +34,14 @@ export default function DashboardPage() {
 
   const filteredUnits = showOnlyRising ? units.filter((unit: Unit) => unit.trend === "up") : units
 
-  const handleStartRenaming = (unit: Unit) => {
-    startRenaming(unit.id, unit.name)
+  const handleStartRenaming = (unit: Unit.unit_id) => {
+    startRenaming(unit.unit_id, unit.name)
   }
 
   const handleSaveRenaming = (unitId: string) => {
     saveRenaming((name: string) => updateUnitName(unitId, name))
   }
+  const unit_id="001"
 
   return (
     <div className="space-y-6">
@@ -50,16 +51,8 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredUnits.map((unit: Unit) => (
           <UnitCard
-            key={unit.id}
-            unit={unit}
-            isSelected={selectedUnit.id === unit.id}
-            onSelect={setSelectedUnit}
-            editingName={editingName}
-            tempName={tempName}
-            setTempName={setTempName}
-            onStartRenaming={handleStartRenaming}
-            onSaveRenaming={handleSaveRenaming}
-            onCancelRenaming={cancelRenaming}
+            key={unit_id}
+            unit_id={unit_id}
           />
         ))}
       </div>

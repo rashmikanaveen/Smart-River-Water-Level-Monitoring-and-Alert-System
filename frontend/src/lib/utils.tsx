@@ -9,11 +9,11 @@ export function cn(...inputs: ClassValue[]) {
 
 export const getStatusColor = (status: string) => {
   switch (status) {
-    case "critical":
-      return "destructive"
-    case "low":
-      return "destructive"
     case "normal":
+      return "destructive"
+    case "high":
+      return "destructive"
+    case "critical":
       return "default"
     default:
       return "secondary"
@@ -28,7 +28,13 @@ export const getTrendIcon = (trend: string, changeInCm: number) => {
       <ArrowUp className="h-4 w-4 text-orange-500" />
     )
   }
-  return <ArrowDown className="h-4 w-4 text-blue-500" />
+  if (trend === "down") {
+    return <ArrowDown className="h-4 w-4 text-blue-500" />
+  }
+  if (trend === "stable") {
+    return <Activity className="h-4 w-4 text-gray-500" />
+  }
+  return <Activity className="h-4 w-4 text-gray-500" />
 }
 
 export const getChangeColor = (changeInCm: number, trend: string) => {
