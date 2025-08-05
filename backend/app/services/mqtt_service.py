@@ -32,7 +32,7 @@ class MQTTService:
     async def disconnect(self):
         if self.is_connected:
             await self.client.disconnect()
-            logger.info("🔌 MQTT disconnected")
+            logger.info(" MQTT disconnected")
 
     def _on_connect(self, client, flags, rc, properties):
         self.is_connected = True
@@ -40,14 +40,14 @@ class MQTTService:
         
         for topic in settings.MQTT_TOPICS:
             client.subscribe(topic)
-            logger.info(f"📡 Subscribed to: {topic}")
+            logger.info(f" Subscribed to: {topic}")
 
     def _on_message(self, client, topic, payload, qos, properties):
         try:
             message = payload.decode('utf-8')
-            logger.info(f"📡 [{topic}] {message}")
-            
-            if topic == "Distance":
+            logger.info(f" [{topic}] {message}")
+
+            if topic == "lora/water_lavel":
                 asyncio.create_task(self._handle_distance(message))
                 
         except Exception as e:
@@ -59,13 +59,15 @@ class MQTTService:
             data = json.loads(message)
             
             
-            #{"distance":100.12,"temp":25}
-            unit_id = data.get("unit_id") 
-            hight = float(data.get("hight", 0))
-            temperature = float(data.get("temp", 0))
-            battery = float(data.get("battery", 0))
-            signal = float(data.get("signal", 0))
-            sensor_status = data.get("sensor_status", 0)
+            #{"i":"001","d":147,"t":26,"b":80,"rssi":-63,"snr":9.75}
+            unit_id = data.get("i") 
+            hight = float(data.get("d", 0))
+            temperature = float(data.get("t", 0))
+            battery = float(data.get("b", 0))
+            rssi = float(data.get("rssi", 0))
+            snr = float(data.get("snr", 0))
+
+            
 
             # Perform calculation
             calculated = hight * 2  # Example calculation
@@ -76,10 +78,9 @@ class MQTTService:
                 "hight": calculated,
                 "temperature": temperature,
                 "battery": battery,
-                "signal": signal,
+                "signal": 90,
                 "trend":"up",
-                "unit": "m",
-                "sensor_status":sensor_status,
+                "sensor_status": "normal",
                 "status":"normal",
                 
             }

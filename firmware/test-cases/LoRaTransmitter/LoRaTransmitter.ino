@@ -5,13 +5,16 @@
 #define RST_PIN   14  // LoRa radio reset
 #define DIO0_PIN  2   // LoRa radio DIO0
 
+
 int packetCounter = 0;
 
 void setup() {
   Serial.begin(115200);
   while (!Serial);
 
-  Serial.println("LoRa Transmitter Starting...");
+  Serial.println("LoRa JSON Transmitter Starting...");
+
+  
 
   LoRa.setPins(SS_PIN, RST_PIN, DIO0_PIN);
 
@@ -31,16 +34,65 @@ void setup() {
   Serial.println("======================");
 }
 
+// Function to get distance from JSN-SR04T
+float getDistance() {
+  
+  
+  float distance =random(100, 600); // Simulated duration (replace with actual sensor reading)
+  
+  return distance;
+}
+
+// Function to get temperature (simulated - replace with actual sensor)
+float getTemperature() {
+  // Simulated temperature reading
+  return 25.0 + random(-50, 50) / 10.0; // 20.0 to 30.0°C
+}
+
+int batterypercentage(){
+  int percentage=80;
+  return percentage;
+}
+
+// Memory-efficient JSON with rounded integers
+String createRoundedJSON(String sensorId, float distance, float temperature,int percentage) {
+  // Round distance to nearest cm and temperature to nearest degree
+  int roundedDistance = (int)round(distance);
+  int roundedTemperature = (int)round(temperature);
+  
+  String json = "{\"i\":\"";
+  json += sensorId;
+  json += "\",\"d\":";
+  json += String(roundedDistance);
+  json += ",\"t\":";
+  json += String(roundedTemperature);
+  json += ",\"b\":";
+  json += String(percentage);
+  json += "}";
+  return json;
+}
+
 void loop() {
-  // Create a proper message with packet counter
-  String message = "Hello from RA02! Packet #" + String(packetCounter);
+  // Read sensor data
+  float temperature = getTemperature();
+  float distance = getDistance();
+  int percentage=batterypercentage();
   
+  // Handle sensor errors
+  if (distance < 0) {
+    distance = 0.0;  // Or use last known good value
+  }
+  
+  // Create compact JSON string with rounded values
+  String jsonMessage = createRoundedJSON("001", distance, temperature,percentage);
+  
+  // Print to Serial for debugging
   Serial.print("Sending: ");
-  Serial.println(message);
+  Serial.println(jsonMessage);
   
-  // Send packet with proper structure
+  // Send JSON over LoRa
   LoRa.beginPacket();
-  LoRa.print(message);
+  LoRa.print(jsonMessage);
   LoRa.endPacket();
   
   // Wait for packet to be sent completely
@@ -48,7 +100,11 @@ void loop() {
   
   packetCounter++;
   
-  Serial.println("Packet sent successfully");
+  Serial.print("Packet #");
+  Serial.print(packetCounter);
+  Serial.print(" sent (");
+  Serial.print(jsonMessage.length());
+  Serial.println(" bytes)");
   Serial.println("------------------------");
   
   delay(3000); // Send every 3 seconds
