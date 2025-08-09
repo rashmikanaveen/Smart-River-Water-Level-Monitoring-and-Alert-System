@@ -1,27 +1,31 @@
-
 #include "config.h"
+
+WiFiClient espClient;
+PubSubClient mqttClient(espClient);
 
 void setup() {
   Serial.begin(115200);
   delay(1000);
+  setupMQTT();
+  LoRaSetup();
+  setupWiFi();
   
-  Serial.println("Disabling WiFi and Bluetooth...");
   
-  // Disable WiFi
-  //disableWiFi();
-  
-  // Disable Bluetooth
-  //disableBluetooth();
-  
-  Serial.println("Both WiFi and Bluetooth are now disabled");
-  Serial.println("Power consumption should be significantly reduced");
 }
 
 void loop() {
-  // Your main application code here
-  // Power consumption is now minimized with radios disabled
+  if(!mqttClient.connected()){
+    connectToBroker();
+  }
+  mqttClient.loop();
+
+  String message = LoRaReceive();
+  if (message.length() > 0) {
+    Serial.println("Received LoRa message: " + message);
+    mqttClient.publish("lora/water_lavel", message.c_str());
+  }
+
   
-  Serial.println("Running main loop with radios disabled...");
-  delay(5000);
+  
 }
 
