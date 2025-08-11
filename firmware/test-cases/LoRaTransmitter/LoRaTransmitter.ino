@@ -60,13 +60,13 @@ String createRoundedJSON(String sensorId, float distance, float temperature,int 
   int roundedDistance = (int)round(distance);
   int roundedTemperature = (int)round(temperature);
   
-  String json = "{\"i\":\"";
+  String json = "{\"i\":\""; //id of a sensor unit
   json += sensorId;
-  json += "\",\"d\":";
+  json += "\",\"d\":";   // distence to water lavel from sensor
   json += String(roundedDistance);
-  json += ",\"t\":";
+  json += ",\"t\":";  // te,perature
   json += String(roundedTemperature);
-  json += ",\"b\":";
+  json += ",\"b\":";   // battry presentage
   json += String(percentage);
   json += "}";
   return json;
