@@ -70,7 +70,8 @@ class MQTTService:
             
 
             # Perform calculation
-            calculated = hight * 2  # Example calculation
+            #calculated = hight * 2  # Example calculation
+            calculated=hight
             
             result = {
                 

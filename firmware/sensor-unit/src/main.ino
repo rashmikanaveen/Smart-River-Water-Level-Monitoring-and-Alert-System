@@ -1,6 +1,7 @@
 #include "config.h"
 
 
+
 void setup() {
   Serial.begin(115200);
   delay(1000);
@@ -16,11 +17,15 @@ void setup() {
   Serial.println("Both WiFi and Bluetooth are now disabled");
   Serial.println("Power consumption should be significantly reduced");
   setupSensors();
+  setTemperatureSensor();
   // Initialize LoRa
   setLoRa();
 }
 
 void loop() {
+
+  float temperature = readTemperature(); //get Temperature from sensor
+  int percentage = 75; //getBatteryPercentage();
   // Your main application code here
   // Power consumption is now minimized with radios disabled
   float rawDistance = getMedianDistance(3);
@@ -47,8 +52,28 @@ void loop() {
     
     delay(1500);
 
-
-  sendLoRaMessage("Distance" ,String(kalmanDistance).c_str());
-  delay(5000);
+  String jsonMessage = createRoundedJSON("001", kalmanDistance, temperature,percentage);
+  // Print to Serial for debugging
+  Serial.print("Sending: ");
+  Serial.println(jsonMessage);
+  
+  // Send JSON over LoRa
+  LoRa.beginPacket();
+  LoRa.print(jsonMessage);
+  LoRa.endPacket();
+  
+  // Wait for packet to be sent completely
+  delay(100);
+  
+  
+  
+  Serial.print("Packet #");
+ 
+  Serial.print(" sent (");
+  Serial.print(jsonMessage.length());
+  Serial.println(" bytes)");
+  Serial.println("------------------------");
+  
+  delay(10000); // Send every 10 seconds
 }
 
