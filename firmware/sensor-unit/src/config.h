@@ -27,6 +27,14 @@ float getMedianDistance(int samples );
 void setupSensors();
 
 
+
+//setup and get Tempdata
+void setTemperatureSensor();
+float readTemperature();
+
+
+String createRoundedJSON(String sensorId, float distance, float temperature,int percentage);
+
 // LoRa configuration
 #define SS_PIN    5   // LoRa radio chip select
 #define RST_PIN   14  // LoRa radio reset
