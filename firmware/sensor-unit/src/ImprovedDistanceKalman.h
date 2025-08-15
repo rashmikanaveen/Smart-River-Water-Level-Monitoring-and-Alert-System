@@ -88,7 +88,7 @@ public:
                 consecutiveInvalidReadings = 0;
             }
             
-            return lastGoodMeasurement;
+            return -1;
         }
     }
     

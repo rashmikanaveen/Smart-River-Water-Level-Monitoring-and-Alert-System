@@ -1,26 +1,6 @@
 #include "config.h"
 
 
-// Memory-efficient JSON with rounded integers
-String createRoundedJSON(String sensorId, float distance, float temperature,int percentage) {
-  // Round distance to nearest cm and temperature to nearest degree
-  int roundedDistance = (int)round(distance);
-  int roundedTemperature = (int)round(temperature);
-  
-  String json = "{\"i\":\""; //id of a sensor unit
-  json += sensorId;
-  json += "\",\"d\":";   // distence to water lavel from sensor
-  json += String(roundedDistance);
-  json += ",\"t\":";  // te,perature
-  json += String(roundedTemperature);
-  json += ",\"b\":";   // battry presentage
-  json += String(percentage);
-  json += "}";
-  return json;
-}
-
-
-
 
 void setup() {
   Serial.begin(115200);
@@ -37,13 +17,14 @@ void setup() {
   Serial.println("Both WiFi and Bluetooth are now disabled");
   Serial.println("Power consumption should be significantly reduced");
   setupSensors();
+  setTemperatureSensor();
   // Initialize LoRa
   setLoRa();
 }
 
 void loop() {
 
-  float temperature = 25.0; //getTemperature();
+  float temperature = readTemperature(); //get Temperature from sensor
   int percentage = 75; //getBatteryPercentage();
   // Your main application code here
   // Power consumption is now minimized with radios disabled
