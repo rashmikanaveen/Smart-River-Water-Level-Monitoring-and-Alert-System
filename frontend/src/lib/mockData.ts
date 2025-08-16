@@ -28,7 +28,7 @@ export const mockUnits: Unit[] = [
     lastUpdate: "2m ago",
     alertLevels: {
       warning: 5.5,
-      high: 6.5,
+      high: 6.4,
       critical: 7.5,
     },
     coordinates: { lat: 25.3176, lng: 82.9739 },
