@@ -25,7 +25,7 @@ export const mockUnits: Unit[] = [
     sensorStatus: "active",
     alertLevels: {
       warning: 5.5,
-      high: 6.5,
+      high: 6.4,
       critical: 7.5,
     },
     
