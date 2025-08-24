@@ -1,5 +1,5 @@
 "use client"
-
+import Cookies from "js-cookie";
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { SettingsIcon, Edit, Save, Check, X, Plus } from "lucide-react"
 import { getStatusColor } from "@/lib/utils"
 import { useUnitContext } from "@/context/unit-context"
+import AddUnit from "@/components/addUnit"
 import type { Unit } from "@/types"
 
 export default function SettingsPage() {
@@ -59,6 +60,24 @@ export default function SettingsPage() {
     saveRenaming((name: string) => updateUnitName(unitId, name))
   }
 
+  const handleAddUnit = (unitId: string, name?: string) => {
+  // Save unitId in a cookie (append to existing list)
+  const existing = Cookies.get("unit_ids");
+  let unitIds: string[] = [];
+  if (existing) {
+    try {
+      unitIds = JSON.parse(existing);
+    } catch {
+      unitIds = [];
+    }
+  }
+  if (!unitIds.includes(unitId)) {
+    unitIds.push(unitId);
+    Cookies.set("unit_ids", JSON.stringify(unitIds), { expires: 365 });
+  }
+  console.log("Add unit:", unitId, name);
+};
+
   return (
     <div className="space-y-6">
       <Card>
@@ -71,10 +90,7 @@ export default function SettingsPage() {
             <CardDescription>Configure warning thresholds and rename units</CardDescription>
           </div>
           <div className="p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
-            <Button className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Add Unit
-            </Button>
+            <AddUnit onAdd={handleAddUnit} />
           </div>
         </CardHeader>
         <CardContent>

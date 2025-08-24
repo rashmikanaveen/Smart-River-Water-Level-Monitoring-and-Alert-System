@@ -79,7 +79,7 @@ class MQTTService:
                 "hight": calculated,
                 "temperature": temperature,
                 "battery": battery,
-                "signal": 90,
+                "signal": 35,
                 "trend":"up",
                 "sensor_status": "normal",
                 "status":"normal",
@@ -100,7 +100,7 @@ class MQTTService:
             # Fallback: try to handle as simple distance value
             try:
                 distance = float(message.strip())
-                calculated = distance * 2
+                calculated = distance 
                 
                 result = {
                     "topic": "Distance",
