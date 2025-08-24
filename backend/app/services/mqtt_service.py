@@ -45,7 +45,7 @@ class MQTTService:
     def _on_message(self, client, topic, payload, qos, properties):
         try:
             message = payload.decode('utf-8')
-            logger.info(f" [{topic}] {message}")
+            #logger.info(f" [{topic}] {message}")
 
             if topic == "lora/water_lavel":
                 asyncio.create_task(self._handle_distance(message))
@@ -89,8 +89,8 @@ class MQTTService:
             # Broadcast via WebSocket if service is available
             if self._websocket_service:
                 await self._websocket_service.broadcast_distance_data(result)
-                logger.info(result)
-                logger.info("\n")
+                #logger.info(result)
+                #logger.info("\n")
             else:
                 logger.warning("WebSocket service not available for broadcasting")
                 
@@ -103,15 +103,17 @@ class MQTTService:
                 calculated = distance 
                 
                 result = {
-                    "topic": "Distance",
-                    "unit_id": "unknown",
-                    "original_distance": hight,
-                    "calculated_reading": calculated,
-                    "temperature": None,
-                    "timestamp": datetime.now().isoformat(),
-                    "unit": "cm",
-                    "status": "success"
-                }
+                
+                "unit_id": unit_id,
+                "hight": calculated,
+                "temperature": temperature,
+                "battery": battery,
+                "signal": 35,
+                "trend":"up",
+                "sensor_status": "normal",
+                "status":"normal",
+                
+            }
                 
                 if self._websocket_service:
                     await self._websocket_service.broadcast_distance_data(calculated)

@@ -7,7 +7,7 @@ import { UnitCard } from "@/components/units/unit-card"
 import { WaterLevelChart } from "@/components/charts/water-level-chart"
 import { useUnitContext } from "@/context/unit-context"
 import { useState, useEffect } from "react"
-import Cookies from "js-cookie"
+import AxiosInstance from "@/lib/axios-instance"
 import { generateMockData } from "@/lib/mockData"
 import type { Unit } from "@/types"
 
@@ -18,39 +18,32 @@ export default function DashboardPage() {
     criticalRising,
   } = useUnitContext()
 
-  const [unitIds, setUnitIds] = useState<string[]>([]);
-  const [historicalData] = useState(generateMockData());
+  const [units, setUnits] = useState<Unit[]>([])
+  const [historicalData] = useState(generateMockData())
 
-  // Load unit IDs from cookie on mount
+  // Fetch all units from backend on mount
+  const fetchUnits = async () => {
+    try {
+      const response = await AxiosInstance.get("/units")
+      setUnits(response.data)
+    } catch (error) {
+      setUnits([])
+    }
+  }
+
   useEffect(() => {
-    const existing = Cookies.get("unit_ids");
-    if (existing) {
-      try {
-        setUnitIds(JSON.parse(existing));
-      } catch {
-        setUnitIds([]);
-      }
-    }
-  }, []);
-
-  // Add unit handler (example, you can trigger this from a modal or button)
-  const handleAddUnit = (unitId: string) => {
-    if (!unitIds.includes(unitId)) {
-      const updated = [...unitIds, unitId];
-      setUnitIds(updated);
-      Cookies.set("unit_ids", JSON.stringify(updated), { expires: 365 });
-    }
-  };
+    fetchUnits()
+  }, [])
 
   return (
     <div className="space-y-6">
       {/* Units Grid */}
-      {unitIds.length > 0 && (
+      {units.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {unitIds.map((unit_id) => (
+          {units.map((unit) => (
             <UnitCard
-              key={unit_id}
-              unit_id={unit_id}
+              key={unit.unit_id}
+              unit_id={unit.unit_id}
             />
           ))}
         </div>

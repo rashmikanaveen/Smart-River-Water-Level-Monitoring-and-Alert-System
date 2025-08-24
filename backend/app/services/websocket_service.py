@@ -37,7 +37,7 @@ class WebSocketService:
                 logger.info(f"WebSocket disconnected from '{subscription_type}'")
 
     async def broadcast_distance_data(self, data: Dict[str, Any]):
-        logger.info(f"Broadcasting distance data: {data}")
+        #logger.info(f"Broadcasting distance data: {data}")
         """Broadcast distance-specific data"""
         await self._broadcast_to_subscriptions(data, ["all", "distance"])
 
