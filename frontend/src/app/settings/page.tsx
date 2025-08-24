@@ -41,24 +41,9 @@ const handleAddUnit = async (unitId: string, name?: string) => {
       unit_id: unitId,
       name: name ?? ""
     });
-    // If successful, update cookie
-    const existing = Cookies.get("unit_ids");
-    let unitIds: string[] = [];
-    if (existing) {
-      try {
-        unitIds = JSON.parse(existing);
-      } catch {
-        unitIds = [];
-      }
-    }
-    if (!unitIds.includes(unitId)) {
-      unitIds.push(unitId);
-      Cookies.set("unit_ids", JSON.stringify(unitIds), { expires: 365 });
-    }
-    // Refetch units
-    fetchUnits();
+    
   } catch (error) {
-    // handle error if needed
+    console.error("Error adding unit:", error);
   }
 };
 
@@ -123,10 +108,7 @@ const handleAddUnit = async (unitId: string, name?: string) => {
                       <p className="text-gray-600 mt-1">
                         {unit.unit_id}
                       </p>
-                      <div className="flex items-center gap-3 mt-2">
-                        <span>Current: {unit.currentLevel ?? "-"}m</span>
-                        <Badge variant={getStatusColor(unit.status ?? "normal")}>{(unit.status ?? "normal").toUpperCase()}</Badge>
-                      </div>
+                      
                     </div>
                     <Button onClick={() => initializeEditing(unit)} disabled={!!editingLevels[unit.unit_id]}>
                       <SettingsIcon className="h-4 w-4 mr-2" />
