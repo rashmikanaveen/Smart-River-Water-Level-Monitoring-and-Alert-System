@@ -44,7 +44,7 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
       }
       
       try {
-        const ws = new WebSocket("ws://127.0.0.1:8000/ws/distance");
+        const ws = new WebSocket(process.env.NEXT_PUBLIC_WS_URL as string);
         wsRef.current = ws;
 
         // Connection opened

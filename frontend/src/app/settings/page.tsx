@@ -1,32 +1,68 @@
 "use client"
 
-import { useState } from "react"
+import Cookies from "js-cookie";
+import { useEffect, useState } from "react"
+import AxiosInstance from "@/lib/axios-instance"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { SettingsIcon, Edit, Save, Check, X, Plus } from "lucide-react"
-import { getStatusColor } from "@/lib/utils"
-import { useUnitContext } from "@/context/unit-context"
+import { SettingsIcon, Save } from "lucide-react"
+import AddUnit from "@/components/addUnit"
 import type { Unit } from "@/types"
+import { getStatusColor } from "@/lib/utils"
 
 export default function SettingsPage() {
-  const {
-    units,
-    updateAlertLevels,
-    editingName,
-    tempName,
-    setTempName,
-    startRenaming,
-    cancelRenaming,
-    saveRenaming,
-    updateUnitName,
-  } = useUnitContext()
+  const [units, setUnits] = useState<Unit[]>([])
   const [editingLevels, setEditingLevels] = useState<{
-    [key: string]: { warning: number; high: number; critical: number } | undefined
+    [key: string]: { warning: number | null; high: number | null; critical: number | null } | undefined
   }>({})
 
+  // Fetch all units from backend on mount
+  const fetchUnits = async () => {
+    try {
+      const response = await AxiosInstance.get("/units")
+      setUnits(response.data)
+    } catch (error) {
+      setUnits([])
+    }
+  }
+
+  useEffect(() => {
+    fetchUnits()
+  }, [])
+
+  // Add unit handler
+const handleAddUnit = async (unitId: string, name?: string) => {
+  // First, post to backend
+  try {
+    await AxiosInstance.post("/addunit", {
+      unit_id: unitId,
+      name: name ?? ""
+    });
+    // If successful, update cookie
+    const existing = Cookies.get("unit_ids");
+    let unitIds: string[] = [];
+    if (existing) {
+      try {
+        unitIds = JSON.parse(existing);
+      } catch {
+        unitIds = [];
+      }
+    }
+    if (!unitIds.includes(unitId)) {
+      unitIds.push(unitId);
+      Cookies.set("unit_ids", JSON.stringify(unitIds), { expires: 365 });
+    }
+    // Refetch units
+    fetchUnits();
+  } catch (error) {
+    // handle error if needed
+  }
+};
+
+  // Alert level editing
   const initializeEditing = (unit: Unit) => {
     setEditingLevels((prev) => ({
       ...prev,
@@ -38,25 +74,25 @@ export default function SettingsPage() {
     setEditingLevels((prev) => ({
       ...prev,
       [unitId]: {
-        ...(prev[unitId] || { warning: 0, high: 0, critical: 0 }),
-        [level]: Number.parseFloat(value) || 0,
+        ...(prev[unitId] || { warning: null, high: null, critical: null }),
+        [level]: value === "" ? null : Number.parseFloat(value),
       },
     }))
   }
 
-  const handleSaveAlertLevels = (unitId: string) => {
+  const handleSaveAlertLevels = async (unitId: string) => {
     if (editingLevels[unitId]) {
-      updateAlertLevels(unitId, editingLevels[unitId])
-      setEditingLevels((prev) => ({ ...prev, [unitId]: undefined }))
+      try {
+        await AxiosInstance.post("/update-alert-levels", {
+          unit_id: unitId,
+          alertLevels: editingLevels[unitId]
+        })
+        setEditingLevels((prev) => ({ ...prev, [unitId]: undefined }))
+        fetchUnits()
+      } catch (error) {
+        // handle error if needed
+      }
     }
-  }
-
-  const handleStartRenaming = (unit: Unit) => {
-    startRenaming(unit.unit_id, unit.name)
-  }
-
-  const handleSaveRenaming = (unitId: string) => {
-    saveRenaming((name: string) => updateUnitName(unitId, name))
   }
 
   return (
@@ -68,13 +104,10 @@ export default function SettingsPage() {
               <SettingsIcon className="h-6 w-6" />
               Water Level Alert Settings
             </CardTitle>
-            <CardDescription>Configure warning thresholds and rename units</CardDescription>
+            <CardDescription>Configure warning thresholds for your units</CardDescription>
           </div>
           <div className="p-4 border-2 border-blue-200 rounded-lg bg-blue-50">
-            <Button className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Add Unit
-            </Button>
+            <AddUnit onAdd={handleAddUnit} />
           </div>
         </CardHeader>
         <CardContent>
@@ -85,40 +118,14 @@ export default function SettingsPage() {
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6">
                     <div className="mb-4 lg:mb-0">
                       <div className="flex items-center gap-3 mb-2">
-                        {editingName === unit.unit_id ? (
-                          <div className="flex items-center gap-2">
-                            <Input
-                              value={tempName}
-                              onChange={(e) => setTempName(e.target.value)}
-                              className="text-xl font-semibold"
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleSaveRenaming(unit.unit_id)
-                                if (e.key === "Escape") cancelRenaming()
-                              }}
-                              autoFocus
-                            />
-                            <Button size="sm" onClick={() => handleSaveRenaming(unit.unit_id)}>
-                              <Check className="h-4 w-4" />
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={cancelRenaming}>
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-3">
-                            <h3 className="font-semibold text-xl">{unit.name}</h3>
-                            <Button size="sm" variant="ghost" onClick={() => handleStartRenaming(unit)}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        )}
+                        <h3 className="font-semibold text-xl">{unit.name || <span className="text-gray-400">Unnamed</span>}</h3>
                       </div>
                       <p className="text-gray-600 mt-1">
-                        {unit.unit_id} • {unit.location}
+                        {unit.unit_id}
                       </p>
                       <div className="flex items-center gap-3 mt-2">
-                        <span>Current: {4}m</span>
-                        <Badge variant={getStatusColor(unit.status)}>{unit.status.toUpperCase()}</Badge>
+                        <span>Current: {unit.currentLevel ?? "-"}m</span>
+                        <Badge variant={getStatusColor(unit.status ?? "normal")}>{(unit.status ?? "normal").toUpperCase()}</Badge>
                       </div>
                     </div>
                     <Button onClick={() => initializeEditing(unit)} disabled={!!editingLevels[unit.unit_id]}>
@@ -126,7 +133,6 @@ export default function SettingsPage() {
                       Configure Alerts
                     </Button>
                   </div>
-
                   {editingLevels[unit.unit_id] ? (
                     <div className="space-y-6 p-6 bg-gray-50 rounded-xl">
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -138,13 +144,12 @@ export default function SettingsPage() {
                             id={`warning-${unit.unit_id}`}
                             type="number"
                             step="0.01"
-                            value={editingLevels[unit.unit_id]?.warning || unit.alertLevels.warning}
+                            value={editingLevels[unit.unit_id]?.warning ?? ""}
                             onChange={(e) => handleLevelChange(unit.unit_id, "warning", e.target.value)}
                             className="mt-2"
                           />
                           <p className="text-sm text-gray-500 mt-1">First alert threshold</p>
                         </div>
-
                         <div>
                           <Label htmlFor={`high-${unit.unit_id}`} className="font-medium">
                             High Level (m)
@@ -153,13 +158,12 @@ export default function SettingsPage() {
                             id={`high-${unit.unit_id}`}
                             type="number"
                             step="0.01"
-                            value={editingLevels[unit.unit_id]?.high || unit.alertLevels.high}
+                            value={editingLevels[unit.unit_id]?.high ?? ""}
                             onChange={(e) => handleLevelChange(unit.unit_id, "high", e.target.value)}
                             className="mt-2"
                           />
                           <p className="text-sm text-gray-500 mt-1">High alert threshold</p>
                         </div>
-
                         <div>
                           <Label htmlFor={`critical-${unit.unit_id}`} className="font-medium">
                             Critical Level (m)
@@ -168,29 +172,13 @@ export default function SettingsPage() {
                             id={`critical-${unit.unit_id}`}
                             type="number"
                             step="0.01"
-                            value={editingLevels[unit.unit_id]?.critical || unit.alertLevels.critical}
+                            value={editingLevels[unit.unit_id]?.critical ?? ""}
                             onChange={(e) => handleLevelChange(unit.unit_id, "critical", e.target.value)}
                             className="mt-2"
                           />
                           <p className="text-sm text-gray-500 mt-1">Critical alert threshold</p>
                         </div>
-                        <div>
-                          <Label htmlFor={`warning-${unit.unit_id}`} className="font-medium">
-                            Rename
-                          </Label>
-                          <Input
-                            id={`rename-${unit.unit_id}`}
-                            placeholder="New unit name"
-                            autoFocus
-                            disabled={editingName === unit.unit_id}
-                            type="text"
-                            
-                            className="mt-2"
-                          />
-                          <p className="text-sm text-gray-500 mt-1">First alert threshold</p>
-                        </div>
                       </div>
-
                       <div className="flex gap-3">
                         <Button onClick={() => handleSaveAlertLevels(unit.unit_id)} className="flex items-center gap-2">
                           <Save className="h-4 w-4" />
@@ -207,15 +195,15 @@ export default function SettingsPage() {
                   ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                       <div className="p-4 border-2 border-yellow-200 rounded-lg text-center bg-yellow-50">
-                        <div className="text-2xl font-bold text-yellow-600">{unit.alertLevels.warning}m</div>
+                        <div className="text-2xl font-bold text-yellow-600">{unit.alertLevels.warning ?? "-" }m</div>
                         <p className="text-sm text-gray-600 mt-1">Warning</p>
                       </div>
                       <div className="p-4 border-2 border-orange-200 rounded-lg text-center bg-orange-50">
-                        <div className="text-2xl font-bold text-orange-600">{unit.alertLevels.high}m</div>
+                        <div className="text-2xl font-bold text-orange-600">{unit.alertLevels.high ?? "-" }m</div>
                         <p className="text-sm text-gray-600 mt-1">High</p>
                       </div>
                       <div className="p-4 border-2 border-red-200 rounded-lg text-center bg-red-50">
-                        <div className="text-2xl font-bold text-red-600">{unit.alertLevels.critical}m</div>
+                        <div className="text-2xl font-bold text-red-600">{unit.alertLevels.critical ?? "-" }m</div>
                         <p className="text-sm text-gray-600 mt-1">Critical</p>
                       </div>
                     </div>
