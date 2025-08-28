@@ -66,6 +66,7 @@ class MQTTService:
             battery = float(data.get("b", 0))
             rssi = float(data.get("rssi", 0))
             snr = float(data.get("snr", 0))
+            time = datetime.now().isoformat()
 
             
 
@@ -83,7 +84,8 @@ class MQTTService:
                 "trend":"up",
                 "sensor_status": "normal",
                 "status":"normal",
-                
+                "time": time
+
             }
             
             # Broadcast via WebSocket if service is available
