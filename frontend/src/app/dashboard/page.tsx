@@ -23,13 +23,21 @@ export default function DashboardPage() {
 
   // Fetch all units from backend on mount
   const fetchUnits = async () => {
-    try {
-      const response = await AxiosInstance.get("/units")
-      setUnits(response.data)
-    } catch (error) {
+  try {
+    const response = await AxiosInstance.get("/units")
+    console.log("API response:", response.data) // Debug log
+    
+    // Extract the units array from the response
+    if (response.data && response.data.units && Array.isArray(response.data.units)) {
+      setUnits(response.data.units)
+    } else {
       setUnits([])
     }
+  } catch (error) {
+    console.error("Error fetching units:", error)
+    setUnits([])
   }
+}
 
   useEffect(() => {
     fetchUnits()
