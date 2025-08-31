@@ -45,7 +45,7 @@ This implementation provides a compact binary data format with CRC error detecti
 │  │   Low Byte (0)  │  High Byte (1)  │  Example: 001 → 0x0001               │
 │  └─────────────────┴─────────────────┘                                      │
 │                                                                             │
-│  Distance (unsigned 16-bit, fixed-point *100):                          │
+│  Distance (unsigned 16-bit, fixed-point *100):                              │
 │  ┌─────────────────┬─────────────────┐                                      │
 │  │   Low Byte (2)  │  High Byte (3)  │  Example: 54.32cm → 5432 → 0x153A    │
 │  └─────────────────┴─────────────────┘           0.00cm → 0 → 0x0000        │
@@ -154,7 +154,7 @@ Received Packet
        ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │ Check Packet    │───▶│ Verify CRC-16   │───▶│ Process Data    │
-│ Size = 13 bytes │    │ Checksum        │    │ Send to Server  │
+│ Size = 9  bytes │    │ Checksum        │    │ Send to Server  │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
        │                       │                       
        ▼                       ▼                       
