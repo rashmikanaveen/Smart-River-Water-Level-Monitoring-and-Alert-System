@@ -28,14 +28,14 @@ void loop() {
   int percentage = 75; //getBatteryPercentage();
   // Your main application code here
   // Power consumption is now minimized with radios disabled
-  float rawDistance = getMedianDistance(3);
-  float kalmanDistance = distanceFilter.updateDistance(rawDistance);
+  float rawDistance = getMedianDistance(12);
+  //float kalmanDistance = distanceFilter.updateDistance(rawDistance);
   // Print detailed results
     Serial.print(millis()/1000);
     Serial.print("\t");
     Serial.print(rawDistance, 2);
-    Serial.print("\t");
-    Serial.print(kalmanDistance, 2);
+    //Serial.print("\t");
+    //Serial.print(kalmanDistance, 2);
     Serial.print("\t\t");
     Serial.print(distanceFilter.getInnovation(), 2);
     Serial.print("\t\t");
@@ -52,26 +52,29 @@ void loop() {
     
     delay(1500);
 
-  String jsonMessage = createRoundedJSON("001", kalmanDistance, temperature,percentage);
-  // Print to Serial for debugging
-  Serial.print("Sending: ");
-  Serial.println(jsonMessage);
   
-  // Send JSON over LoRa
-  LoRa.beginPacket();
-  LoRa.print(jsonMessage);
-  LoRa.endPacket();
+  
+  // OPTION 2: Send as binary with CRC (new method)
+  uint8_t binaryData[BINARY_PACKET_SIZE];
+  if (packSensorData("001", rawDistance, temperature, percentage, binaryData)) {
+    Serial.print("Binary: ");
+    printBinaryData(binaryData, BINARY_PACKET_SIZE);
+    
+    // Send binary data over LoRa
+    LoRa.beginPacket();
+    LoRa.write(binaryData, BINARY_PACKET_SIZE); // Use write() for binary data
+    LoRa.endPacket();
+
+    //Serial.print("Data compression: ");
+    //Serial.print(((float)(jsonMessage.length() - BINARY_PACKET_SIZE) / jsonMessage.length()) * 100, 1);
+    //Serial.println("% reduction");
+  } else {
+    Serial.println("Error: Failed to pack binary data");
+  }
   
   // Wait for packet to be sent completely
   delay(100);
   
-  
-  
-  Serial.print("Packet #");
- 
-  Serial.print(" sent (");
-  Serial.print(jsonMessage.length());
-  Serial.println(" bytes)");
   Serial.println("------------------------");
   
   delay(10000); // Send every 10 seconds

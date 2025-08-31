@@ -1,4 +1,5 @@
 #include "config.h"
+#include "BinaryProtocol.h"
 
 void LoRaSetup() {
   Serial.println("LoRa Receiver Starting...");
@@ -25,46 +26,76 @@ String LoRaReceive() {
   String enhancedMessage = "";
   
   if (packetSize) {
-    // Read packet into string buffer safely
-    String receivedMessage = "";
-    
-    // Read all available bytes
-    while (LoRa.available()) {
-      char c = LoRa.read();
-      if (c >= 32 && c <= 126) { // Only printable ASCII characters
-        receivedMessage += c;
-      }
-    }
-    
-    // Only process if we received a valid message
-    if (receivedMessage.length() > 0) {
-      // Get signal quality parameters
-      int rssi = LoRa.packetRssi();
-      float snr = LoRa.packetSnr();
+    // Check if packet size matches our binary protocol
+    if (packetSize == BINARY_PACKET_SIZE) {
+      // Handle binary protocol
+      uint8_t buffer[BINARY_PACKET_SIZE];
       
-      // Create enhanced JSON by adding RSSI and SNR only
-      // Remove the closing brace from original message
-      String baseMessage = receivedMessage;
-      if (baseMessage.endsWith("}")) {
-        baseMessage = baseMessage.substring(0, baseMessage.length() - 1);
+      // Read binary data
+      for (int i = 0; i < packetSize && LoRa.available(); i++) {
+        buffer[i] = LoRa.read();
       }
       
-      // Add signal strength fields to JSON
-      enhancedMessage = baseMessage + ",\"rssi\":" + String(rssi) + 
-                       ",\"snr\":" + String(snr, 2) + "}";
+      // Unpack binary data
+      uint16_t deviceId;
+      float distance, temperature;
+      uint8_t batteryPercentage;
       
-      Serial.println("=== PACKET RECEIVED ===");
-      Serial.println("Message: " + receivedMessage);
-      Serial.print("RSSI: ");
-      Serial.print(rssi);
-      Serial.println(" dBm");
-      Serial.print("SNR: ");
-      Serial.print(snr, 2);
-      Serial.println(" dB");
+      if (unpackSensorData(buffer, deviceId, distance, temperature, batteryPercentage)) {
+        // Get signal quality parameters
+        int rssi = LoRa.packetRssi();
+        float snr = LoRa.packetSnr();
+        
+        // Convert to JSON with RSSI and SNR only (format device ID with leading zeros)
+        String formattedDeviceId = String(deviceId);
+        if (deviceId < 10) {
+          formattedDeviceId = "00" + String(deviceId);
+        } else if (deviceId < 100) {
+          formattedDeviceId = "0" + String(deviceId);
+        }
+        
+        enhancedMessage = "{\"i\":\"" + formattedDeviceId + "\",";
+        enhancedMessage += "\"d\":" + String(distance, 2) + ",";
+        enhancedMessage += "\"t\":" + String(temperature, 2) + ",";
+        enhancedMessage += "\"b\":" + String(batteryPercentage) + ",";
+        enhancedMessage += "\"rssi\":" + String(rssi) + ",";
+        enhancedMessage += "\"snr\":" + String(snr, 2) + "}";
+        
+        Serial.println("=== BINARY PACKET RECEIVED ===");
+        Serial.println("Device ID: " + String(deviceId));
+        Serial.println("Distance: " + String(distance, 2) + " cm");
+        Serial.println("Temperature: " + String(temperature, 2) + " °C");
+        Serial.println("Battery: " + String(batteryPercentage) + "%");
+        Serial.print("RSSI: ");
+        Serial.print(rssi);
+        Serial.println(" dBm");
+        Serial.print("SNR: ");
+        Serial.print(snr, 2);
+        Serial.println(" dB");
+        Serial.println("MQTT JSON: " + enhancedMessage);
+        Serial.println("==============================");
+        
+        printBinaryData(buffer, BINARY_PACKET_SIZE);
+      } else {
+        Serial.println("=== BINARY PACKET CRC ERROR ===");
+        Serial.print("Packet Size: ");
+        Serial.print(packetSize);
+        Serial.println(" bytes");
+        printBinaryData(buffer, BINARY_PACKET_SIZE);
+        Serial.println("===============================");
+      }
+    } else {
+      // Unknown packet size - log and ignore
+      Serial.println("=== UNKNOWN PACKET SIZE ===");
       Serial.print("Packet Size: ");
       Serial.print(packetSize);
-      Serial.println(" bytes");
-      Serial.println("=======================");
+      Serial.println(" bytes (ignoring non-binary packet)");
+      
+      // Clear the buffer without processing
+      while (LoRa.available()) {
+        LoRa.read();
+      }
+      Serial.println("===========================");
     }
   }
   
