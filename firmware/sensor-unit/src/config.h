@@ -11,6 +11,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include "ImprovedDistanceKalman.h"
+#include "BinaryProtocol.h"
 
 
 
