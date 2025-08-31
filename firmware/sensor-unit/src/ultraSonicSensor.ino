@@ -1,8 +1,19 @@
 #include "config.h"
 
 
-// Enhanced JSN-SR04T measurement function
-float getJSNDistance() {
+// Enhanced JSN-SR04T measurement function with temperature compensation
+float getJSNDistance(float temp) {
+    // Calculate temperature-compensated speed of sound
+    // Speed of sound = 331.3 + (0.606 * temperature) m/s
+    float speedOfSound = (331.3 + (0.606 * temp)) / 10000.0; // Convert to cm/μs
+    
+    // Debug: Print speed of sound (optional - can remove in production)
+    static bool firstCall = true;
+    if (firstCall) {
+        Serial.printf("Temperature: %.1f°C, Speed of sound: %.4f cm/μs\n", temp, speedOfSound);
+        firstCall = false;
+    }
+    
     // Multiple pulse attempt for better reliability
     for (int attempt = 0; attempt < 3; attempt++) {
         digitalWrite(trigPin, LOW);
@@ -14,7 +25,7 @@ float getJSNDistance() {
         unsigned long duration = pulseIn(echoPin, HIGH, 50000);
         
         if (duration > 0) {
-            float distance = (duration * 0.0343) / 2.0;
+            float distance = (duration * speedOfSound) / 2.0; // Temperature compensated
             // Quick sanity check
             if (distance >= 10.0 && distance <= 600.0) {
                 return distance;
@@ -28,12 +39,12 @@ float getJSNDistance() {
 }
 
 // Enhanced median filter with outlier rejection
-float getMedianDistance(int samples = 3) { // Reduced samples for faster response
+float getMedianDistance(int samples ,float temp) { // Reduced samples for faster response
     float readings[samples];
     int validReadings = 0;
     
     for (int i = 0; i < samples; i++) {
-        float distance = getJSNDistance();
+        float distance = getJSNDistance(temp);
         
         if (distance > 0) {
             readings[validReadings] = distance;
@@ -67,7 +78,10 @@ void setupSensors() {
     pinMode(echoPin, INPUT);
     
     Serial.println("JSN-SR04T Sensor Initialized");
-    float testDist = getJSNDistance();
+    
+    // Use default temperature for initial test (25°C)
+    float defaultTemp = 25.0;
+    float testDist = getJSNDistance(defaultTemp);
     if (testDist > 0) {
         Serial.print("Sensor OK - Initial reading: ");
         Serial.print(testDist);

@@ -23,8 +23,8 @@ void sendLoRaMessage(const String& Topic,const String& message);
 
 
 
-float getJSNDistance();
-float getMedianDistance(int samples );
+float getJSNDistance(float temp);
+float getMedianDistance(int samples ,float temp);
 void setupSensors();
 
 
