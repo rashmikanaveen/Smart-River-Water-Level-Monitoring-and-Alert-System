@@ -154,7 +154,7 @@ Received Packet
        ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │ Check Packet    │───▶│ Verify CRC-16   │───▶│ Process Data    │
-│ Size = 9 bytes  │    │ Checksum        │    │ Send to Server  │
+│ Size = 9  bytes │    │ Checksum        │    │ Send to Server  │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
        │                       │                       
        ▼                       ▼                       
