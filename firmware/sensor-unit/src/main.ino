@@ -1,6 +1,6 @@
 #include "config.h"
 
-
+String unitID = "001"; // Unique identifier for this unit
 
 void setup() {
   Serial.begin(115200);
@@ -28,7 +28,7 @@ void loop() {
   int percentage = 75; //getBatteryPercentage();
   // Your main application code here
   // Power consumption is now minimized with radios disabled
-  float rawDistance = getMedianDistance(12);
+  float rawDistance = getMedianDistance(12, temperature); // Pass temperature for accurate measurements
   //float kalmanDistance = distanceFilter.updateDistance(rawDistance);
   // Print detailed results
     Serial.print(millis()/1000);
@@ -56,7 +56,7 @@ void loop() {
   
   // OPTION 2: Send as binary with CRC (new method)
   uint8_t binaryData[BINARY_PACKET_SIZE];
-  if (packSensorData("001", rawDistance, temperature, percentage, binaryData)) {
+  if (packSensorData(unitID, rawDistance, temperature, percentage, binaryData)) {
     Serial.print("Binary: ");
     printBinaryData(binaryData, BINARY_PACKET_SIZE);
     
