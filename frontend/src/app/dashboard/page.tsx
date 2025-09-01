@@ -6,12 +6,13 @@ import { ArrowUp, Edit } from "lucide-react"
 import { UnitCard } from "@/components/units/unit-card"
 import { WaterLevelChart } from "@/components/charts/water-level-chart"
 import { useUnitContext } from "@/context/unit-context"
+import { WebSocketProvider } from "@/context/websocket-context"
 import { useState, useEffect } from "react"
 import AxiosInstance from "@/lib/axios-instance"
 import { generateMockData } from "@/lib/mockData"
 import type { Unit } from "@/types"
 
-export default function DashboardPage() {
+function DashboardContent() {
   const {
     selectedUnit,
     risingCount,
@@ -115,5 +116,13 @@ export default function DashboardPage() {
         </Card>
       )}
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <WebSocketProvider shouldConnect={true}>
+      <DashboardContent />
+    </WebSocketProvider>
   )
 }
