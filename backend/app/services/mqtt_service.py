@@ -17,6 +17,8 @@ class MQTTService:
         self._reconnect_attempts = 0
         self._max_reconnect_attempts = 5
         self._reconnect_delay = 5  # seconds
+        self._last_db_save = {}  # Track last database save time per unit_id
+        self._db_save_interval = 300  # 5 minutes in seconds
 
     def set_websocket_service(self, ws_service):
         """Set websocket service to avoid circular import"""
@@ -92,14 +94,26 @@ class MQTTService:
                 "time": time
             }
 
-            # Save to database (non-blocking)
-            asyncio.create_task(self._save_measurement(unit_id, height, temperature, battery, rssi, snr))
-            
-            # Broadcast via WebSocket if service is available
-            if self._websocket_service:
+            # Only broadcast via WebSocket if there are active connections
+            if self._websocket_service and self._websocket_service.has_active_connections():
                 await self._websocket_service.broadcast_distance_data(result)
+                #logger.debug(f"Broadcasted distance data: {result}")
+            elif self._websocket_service:
+                logger.debug("No active WebSocket connections - skipping broadcast")
             else:
-                logger.warning("WebSocket service not available for broadcasting")
+                logger.warning("WebSocket service not available")
+
+            # Save to database only if 5 minutes have passed since last save for this unit
+            current_time = datetime.now().timestamp()
+            last_save_time = self._last_db_save.get(unit_id, 0)
+            
+            if current_time - last_save_time >= self._db_save_interval:
+                # Save to database (non-blocking)
+                asyncio.create_task(self._save_measurement(unit_id, height, temperature, battery, rssi, snr))
+                self._last_db_save[unit_id] = current_time
+                logger.info(f"Data saved to database for unit {unit_id}")
+            else:
+                logger.debug(f"Skipping database save for unit {unit_id} - within 5-minute interval")
                 
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON format: {message} - {e}")

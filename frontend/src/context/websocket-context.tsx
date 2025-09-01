@@ -26,7 +26,12 @@ const WebSocketContext = createContext<WebSocketContextType>({
   error: null,
 });
 
-export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
+interface WebSocketProviderProps {
+  children: ReactNode;
+  shouldConnect?: boolean;
+}
+
+export const WebSocketProvider = ({ children, shouldConnect = true }: WebSocketProviderProps) => {
   const [sensorData, setSensorData] = useState<SensorData | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +39,20 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
+    // Only setup WebSocket if shouldConnect is true
+    if (!shouldConnect) {
+      // If shouldConnect is false, clean up any existing connection
+      if (wsRef.current) {
+        console.log("Closing WebSocket due to shouldConnect=false");
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      setIsConnected(false);
+      setSensorData(null);
+      setError(null);
+      return;
+    }
+
     // Function to create and setup WebSocket
     const setupWebSocket = () => {
       console.log(`Attempting to connect to WebSocket (attempt ${reconnectAttempt + 1})...`);
@@ -115,9 +134,10 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
       if (wsRef.current) {
         console.log("Closing WebSocket due to component unmount");
         wsRef.current.close();
+        wsRef.current = null;
       }
     };
-  }, [reconnectAttempt]); // Reconnect when reconnectAttempt changes
+  }, [reconnectAttempt, shouldConnect]); // Reconnect when reconnectAttempt changes or shouldConnect changes
 
   return (
     <WebSocketContext.Provider value={{ sensorData, isConnected, error }}>

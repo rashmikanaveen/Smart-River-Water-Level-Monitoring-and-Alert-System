@@ -3,7 +3,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { UnitProvider } from "@/context/unit-context"
 import { LayoutContent } from "@/components/layout-content"
-import { WebSocketProvider } from "@/context/websocket-context";
+
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
@@ -19,11 +19,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <WebSocketProvider>
-          <UnitProvider>
-            <LayoutContent>{children}</LayoutContent>
-          </UnitProvider>
-        </WebSocketProvider>
+        <UnitProvider>
+          <LayoutContent>{children}</LayoutContent>
+        </UnitProvider>
       </body>
     </html>
   )
