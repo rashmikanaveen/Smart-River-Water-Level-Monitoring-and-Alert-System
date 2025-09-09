@@ -9,6 +9,7 @@ class UnitDB(Base):
     location = Column(String(200))
     
     # Alert levels
+    normal_level = Column(Float)
     warning_level = Column(Float)
     high_level = Column(Float)
     critical_level = Column(Float)

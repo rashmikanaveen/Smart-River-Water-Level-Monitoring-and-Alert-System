@@ -69,10 +69,6 @@ class WebSocketService:
     def get_total_connections(self) -> int:
         return sum(len(conns) for conns in self.connections.values())
 
-    def has_active_connections(self) -> bool:
-        """Check if there are any active WebSocket connections"""
-        return self.get_total_connections() > 0
-
     def get_connection_stats(self) -> Dict[str, int]:
         return {sub_type: len(conns) for sub_type, conns in self.connections.items()}
 
