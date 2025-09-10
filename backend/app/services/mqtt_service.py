@@ -2,10 +2,11 @@ from gmqtt import Client as MQTTClient
 import asyncio
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from app.core.config import settings
 from app.db.sessions import get_session
 from app.models.database.sensor_measurements import SensorMeasurementDB
+from app.services.mqtt_cache_manager import mqtt_cache_manager
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +18,8 @@ class MQTTService:
         self._reconnect_attempts = 0
         self._max_reconnect_attempts = 5
         self._reconnect_delay = 5  # seconds
-        self._last_db_save = {}  # Track last database save time per unit_id
-        self._db_save_interval = 300  # 5 minutes in seconds
+        self._last_save_times = {}  # Track last save time per unit
+        self._save_interval = 30  # Save interval in seconds (2 minutes)
 
     def set_websocket_service(self, ws_service):
         """Set websocket service to avoid circular import"""
@@ -79,12 +80,16 @@ class MQTTService:
             snr = float(data.get("snr", 0))
             time = datetime.now().isoformat()
 
-            # Perform calculation
-            calculated = height
-            
+            # Get normal value using optimized cache logic
+            normal_value = await mqtt_cache_manager.get_or_calculate_normal_value(unit_id, height)
+
+            # Calculate water level relative to normal
+            # You can modify this calculation based on your requirements
             result = {
                 "unit_id": unit_id,
-                "hight": calculated,  # Keep for WebSocket compatibility
+                "hight": height,  # Keep for WebSocket compatibility
+                "normal_level": normal_value,  # Include normal level in response
+                "raw_height": height,  # Include raw sensor reading
                 "temperature": temperature,
                 "battery": battery,
                 "signal": 35,
@@ -94,26 +99,16 @@ class MQTTService:
                 "time": time
             }
 
-            # Only broadcast via WebSocket if there are active connections
-            if self._websocket_service and self._websocket_service.has_active_connections():
-                await self._websocket_service.broadcast_distance_data(result)
-                #logger.debug(f"Broadcasted distance data: {result}")
-            elif self._websocket_service:
-                logger.debug("No active WebSocket connections - skipping broadcast")
-            else:
-                logger.warning("WebSocket service not available")
-
-            # Save to database only if 5 minutes have passed since last save for this unit
-            current_time = datetime.now().timestamp()
-            last_save_time = self._last_db_save.get(unit_id, 0)
-            
-            if current_time - last_save_time >= self._db_save_interval:
-                # Save to database (non-blocking)
+            # Save to database only if enough time has passed (non-blocking)
+            if self._should_save_measurement(unit_id):
                 asyncio.create_task(self._save_measurement(unit_id, height, temperature, battery, rssi, snr))
-                self._last_db_save[unit_id] = current_time
-                logger.info(f"Data saved to database for unit {unit_id}")
+                self._last_save_times[unit_id] = datetime.now()
+            
+            # Broadcast via WebSocket if service is available (always broadcast for real-time updates)
+            if self._websocket_service:
+                await self._websocket_service.broadcast_distance_data(result)
             else:
-                logger.debug(f"Skipping database save for unit {unit_id} - within 5-minute interval")
+                logger.warning("WebSocket service not available for broadcasting")
                 
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON format: {message} - {e}")
@@ -122,6 +117,16 @@ class MQTTService:
             logger.error(f"Invalid numeric values in JSON: {message} - {e}")
         except Exception as e:
             logger.error(f"Error handling distance message: {e}")
+
+    def _should_save_measurement(self, unit_id: str) -> bool:
+        """Check if enough time has passed since last save for this unit"""
+        last_save = self._last_save_times.get(unit_id)
+        if last_save is None:
+            # First time saving for this unit
+            return True
+        
+        time_since_last_save = (datetime.now() - last_save).total_seconds()
+        return time_since_last_save >= self._save_interval
 
     async def _save_measurement(self, unit_id: str, height: float, temperature: float, 
                               battery: float, rssi: float, snr: float):
@@ -178,6 +183,24 @@ class MQTTService:
         if not await self.is_connection_alive():
             logger.warning("MQTT connection lost, attempting to reconnect")
             await self._handle_reconnection()
+
+    def get_cache_statistics(self):
+        """Get cache statistics from cache manager"""
+        return mqtt_cache_manager.get_cache_stats()
+
+    def clear_unit_cache(self, unit_id: str = None):
+        """Clear cache for specific unit or all units"""
+        mqtt_cache_manager.clear_cache(unit_id)
+        return {"message": f"Cache cleared for {'all units' if not unit_id else f'unit {unit_id}'}"}
+
+    def set_save_interval(self, interval_seconds: int):
+        """Set the save interval in seconds (default is 120 seconds / 2 minutes)"""
+        self._save_interval = interval_seconds
+        logger.info(f"Save interval set to {interval_seconds} seconds")
+
+    def get_save_interval(self) -> int:
+        """Get current save interval in seconds"""
+        return self._save_interval
 
 # Create singleton instance
 mqtt_service = MQTTService()
