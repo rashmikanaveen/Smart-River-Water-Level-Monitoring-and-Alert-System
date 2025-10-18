@@ -38,7 +38,11 @@ class DailyMidnightScheduler:
         
         while self.running:
             schedule.run_pending()
-            time.sleep(60)  # Check every minute
+            # Sleep in smaller intervals to allow faster shutdown
+            for _ in range(60):  # 60 seconds = 60 * 1 second
+                if not self.running:
+                    break
+                time.sleep(1)
     
     def start(self):
         """Start the scheduler in a background thread"""
@@ -50,9 +54,15 @@ class DailyMidnightScheduler:
     def stop(self):
         """Stop the scheduler"""
         self.running = False
-        if self.thread:
-            self.thread.join()
-        logger.info("🛑 Daily scheduler stopped")
+        if self.thread and self.thread.is_alive():
+            # Wait for thread to finish but with timeout
+            self.thread.join(timeout=2.0)
+            if self.thread.is_alive():
+                logger.warning("⚠️ Daily scheduler thread did not stop cleanly")
+            else:
+                logger.info("🛑 Daily scheduler stopped")
+        else:
+            logger.info("🛑 Daily scheduler stopped")
 
 # Global scheduler instance
 daily_scheduler = DailyMidnightScheduler()
