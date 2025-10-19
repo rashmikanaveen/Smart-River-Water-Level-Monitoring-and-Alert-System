@@ -83,6 +83,16 @@ class MQTTService:
             # Get normal value using optimized cache logic
             normal_value = await mqtt_cache_manager.get_or_calculate_normal_value(unit_id, height)
 
+            # Update latest sensor data cache
+            mqtt_cache_manager.update_latest_sensor_data(
+                unit_id=unit_id,
+                distance=height,
+                temperature=temperature,
+                battery=battery,
+                rssi=rssi,
+                snr=snr
+            )
+
             # Calculate water level relative to normal
             # You can modify this calculation based on your requirements
             result = {
@@ -95,7 +105,7 @@ class MQTTService:
                 "signal": 35,
                 "trend": "up",
                 "sensor_status": "normal",
-                "status": "normal",
+                "status": "normal",  # "normal","warning", "high", "critical"
                 "time": time
             }
 

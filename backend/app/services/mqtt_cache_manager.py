@@ -26,6 +26,11 @@ class MQTTCacheManager:
         # Structure: {unit_id: {"readings": [float], "count": int}}
         self._first_readings_cache: Dict[str, Dict] = {}
         
+        # Cache for latest sensor data from MQTT
+        # Structure: {unit_id: {"distance": float, "temperature": float, "battery": float, 
+        #                       "rssi": int, "snr": float, "last_updated": datetime}}
+        self._latest_sensor_data_cache: Dict[str, Dict] = {}
+        
         # Number of readings to collect for normal value calculation
         self.NORMAL_CALCULATION_READINGS = 12
         
@@ -202,6 +207,27 @@ class MQTTCacheManager:
             # Fallback to current height
             return current_height
     
+    def update_latest_sensor_data(self, unit_id: str, distance: float, temperature: float, 
+                                   battery: float, rssi: int, snr: float):
+        """Update the latest sensor data cache when MQTT data arrives"""
+        self._latest_sensor_data_cache[unit_id] = {
+            "distance": distance,
+            "temperature": temperature,
+            "battery": battery,
+            "rssi": rssi,
+            "snr": snr,
+            "last_updated": datetime.now()
+        }
+        logger.debug(f"Updated latest sensor data cache for unit {unit_id}")
+    
+    def get_latest_sensor_data(self, unit_id: str) -> Optional[Dict]:
+        """Get the latest cached sensor data for a unit"""
+        return self._latest_sensor_data_cache.get(unit_id)
+    
+    def get_all_latest_sensor_data(self) -> Dict[str, Dict]:
+        """Get all cached latest sensor data for all units"""
+        return self._latest_sensor_data_cache.copy()
+    
     def clear_cache(self, unit_id: Optional[str] = None):
         """Clear cache for specific unit or all units"""
         if unit_id:
@@ -211,9 +237,13 @@ class MQTTCacheManager:
             if unit_id in self._first_readings_cache:
                 del self._first_readings_cache[unit_id]
                 logger.info(f"Cleared first readings cache for unit {unit_id}")
+            if unit_id in self._latest_sensor_data_cache:
+                del self._latest_sensor_data_cache[unit_id]
+                logger.info(f"Cleared latest sensor data cache for unit {unit_id}")
         else:
             self._normal_values_cache.clear()
             self._first_readings_cache.clear()
+            self._latest_sensor_data_cache.clear()
             logger.info("Cleared all cache")
     
     def get_cache_stats(self) -> Dict:
@@ -221,12 +251,14 @@ class MQTTCacheManager:
         total_units = len(self._normal_values_cache)
         units_with_normal = len([u for u in self._normal_values_cache.values() if u.get("has_normal", False)])
         units_collecting_readings = len(self._first_readings_cache)
+        units_with_sensor_data = len(self._latest_sensor_data_cache)
         
         return {
             "total_cached_units": total_units,
             "units_with_normal_values": units_with_normal,
             "units_without_normal_values": total_units - units_with_normal,
             "units_collecting_first_readings": units_collecting_readings,
+            "units_with_latest_sensor_data": units_with_sensor_data,
             "normal_calculation_readings_required": self.NORMAL_CALCULATION_READINGS,
             "cache_hit_ratio": units_with_normal / total_units if total_units > 0 else 0,
             "first_readings_details": {

@@ -5,34 +5,8 @@ from app.models.unit import Unit
 from app.models.database.unit import UnitDB
 from sqlalchemy.future import select
 
-router = APIRouter()
-
-@router.post("/addunit")
-async def add_unit(unit: Unit, session: AsyncSession = Depends(get_session)):
-    try:
-        # Check if unit already exists
-        result = await session.execute(select(UnitDB).where(UnitDB.unit_id == unit.unit_id))
-        existing_unit = result.scalar_one_or_none()
-        
-        if existing_unit:
-            raise HTTPException(status_code=400, detail="Unit already exists")
-        
-        # Create new unit
-        new_unit = UnitDB(
-            unit_id=unit.unit_id,
-            name=unit.name,
-            warning_level=unit.alertLevels.warning,
-            high_level=unit.alertLevels.high,
-            critical_level=unit.alertLevels.critical
-        )
-        
-        session.add(new_unit)
-        await session.commit()
-        
-        return {"message": "Unit added", "unit": {"unit_id": new_unit.unit_id, "name": new_unit.name}}
-    except Exception as e:
-        await session.rollback()
-        raise HTTPException(status_code=500, detail=f"Error adding unit: {str(e)}")
+router = APIRouter(prefix="/api")
+router.tags = ["units"]
 
 @router.get("/units")
 async def list_units(session: AsyncSession = Depends(get_session)):
@@ -51,6 +25,7 @@ async def list_units(session: AsyncSession = Depends(get_session)):
                 "name": unit.name,
                 "location": unit.location,
                 "alertLevels": {
+                    "normal": unit.normal_level,
                     "warning": unit.warning_level,
                     "high": unit.high_level,
                     "critical": unit.critical_level
@@ -63,3 +38,73 @@ async def list_units(session: AsyncSession = Depends(get_session)):
         return {"units": unit_list}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving units: {str(e)}")
+    
+
+@router.get("/units/levels")
+async def get_all_unit_levels(session: AsyncSession = Depends(get_session)):
+    """
+    Get alert levels for all active units.
+    Returns unit_id, name, location and all alert levels (normal, warning, high, critical).
+    """
+    try:
+        # Get all active units
+        result = await session.execute(
+            select(UnitDB).where(UnitDB.is_active == True)
+        )
+        units = result.scalars().all()
+        
+        # Format response
+        units_levels = []
+        for unit in units:
+            units_levels.append({
+                "unit_id": unit.unit_id,
+                "name": unit.name,
+                "location": unit.location,
+                "levels": {
+                    "normal": unit.normal_level,
+                    "warning": unit.warning_level,
+                    "high": unit.high_level,
+                    "critical": unit.critical_level
+                }
+            })
+        
+        return {
+            "total_units": len(units_levels),
+            "units": units_levels
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving unit levels: {str(e)}")
+
+
+@router.put("/updateUnitData/{unit_id}")
+async def update_unit_data(unit_id: str, unit: Unit, session: AsyncSession = Depends(get_session)):
+    try:
+        # Fetch the unit from the database
+        result = await session.execute(
+            select(UnitDB).where(UnitDB.unit_id == unit_id)
+        )
+        db_unit = result.scalars().first()
+        
+        if not db_unit:
+            raise HTTPException(status_code=404, detail="Unit not found")
+        
+        # Update unit details
+        db_unit.name = unit.name
+        db_unit.location = unit.location
+        if hasattr(unit.alertLevels, 'normal') and unit.alertLevels.normal is not None:
+            db_unit.normal_level = unit.alertLevels.normal
+        db_unit.warning_level = unit.alertLevels.warning
+        db_unit.high_level = unit.alertLevels.high
+        db_unit.critical_level = unit.alertLevels.critical
+        if hasattr(unit, 'is_active'):
+            db_unit.is_active = unit.is_active
+        
+        # Commit changes
+        await session.commit()
+        
+        return {"message": "Unit updated successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating unit: {str(e)}")
+    
