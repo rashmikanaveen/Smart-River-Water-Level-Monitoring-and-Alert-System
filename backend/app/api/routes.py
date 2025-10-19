@@ -1,6 +1,11 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from app.services.websocket_service import websocket_service
 from app.services.mqtt_service import mqtt_service
+from app.services.mqtt_cache_manager import mqtt_cache_manager
+from app.db.sessions import get_session
+from app.models.database.unit import UnitDB
 
 router = APIRouter(prefix="/api")
 
@@ -47,4 +52,58 @@ async def get_mqtt_status():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting MQTT status: {str(e)}")
+
+@router.get("/latest-data/{unit_id}")
+async def get_latest_unit_data(unit_id: str, session: AsyncSession = Depends(get_session)):
+    """
+    Get the most recent sensor data for a specific unit from cache.
+    Returns the latest MQTT data with the last update time.
+    """
+    try:
+        # Get cached sensor data
+        sensor_data = mqtt_cache_manager.get_latest_sensor_data(unit_id)
+        
+        if not sensor_data:
+            raise HTTPException(
+                status_code=404, 
+                detail=f"No recent data available for unit {unit_id}. Unit may not have sent data yet."
+            )
+        
+        # Get unit details from database
+        result = await session.execute(
+            select(UnitDB).where(UnitDB.unit_id == unit_id)
+        )
+        unit = result.scalars().first()
+        
+        if not unit:
+            raise HTTPException(status_code=404, detail=f"Unit {unit_id} not found in database")
+        
+        # Get cached normal value
+        normal_level = mqtt_cache_manager.get_cached_normal_value(unit_id)
+        
+        return {
+            "unit_id": unit_id,
+            "unit_name": unit.name,
+            "location": unit.location,
+            "sensor_data": {
+                "distance": sensor_data["distance"],
+                "temperature": sensor_data["temperature"],
+                "battery": sensor_data["battery"],
+                "rssi": sensor_data["rssi"],
+                "snr": sensor_data["snr"],
+                "last_updated": sensor_data["last_updated"].isoformat()
+            },
+            "alert_levels": {
+                "normal": normal_level if normal_level else unit.normal_level,
+                "warning": unit.warning_level,
+                "high": unit.high_level,
+                "critical": unit.critical_level
+            },
+            "is_active": unit.is_active
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving latest data: {str(e)}")
 

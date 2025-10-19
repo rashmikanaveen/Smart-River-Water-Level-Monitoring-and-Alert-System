@@ -4,7 +4,10 @@ export interface Unit {
   unit_id: string
   name: string
   location: string
-  changeInCm: number
+  normalLevelCm?: number
+  highLevelCm?: number
+  criticalLevelCm?: number
+  changeInCm?: number
   trend: "up" | "down"|"stable"
   status: "normal" | "critical" | "low"
   battery: number

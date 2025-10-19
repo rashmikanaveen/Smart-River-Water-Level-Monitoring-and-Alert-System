@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { UnitProvider } from "@/context/unit-context"
+import { WebSocketWrapper } from "@/components/websocket-wrapper"
 import { LayoutContent } from "@/components/layout-content"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -20,7 +21,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <UnitProvider>
-          <LayoutContent>{children}</LayoutContent>
+          <WebSocketWrapper>
+            <LayoutContent>{children}</LayoutContent>
+          </WebSocketWrapper>
         </UnitProvider>
       </body>
     </html>

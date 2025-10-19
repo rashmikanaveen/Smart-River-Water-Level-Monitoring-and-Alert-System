@@ -9,4 +9,5 @@ class AlertLevels(BaseModel):
 class Unit(BaseModel):
     unit_id: str
     name: str = ""
+    location: str = ""
     alertLevels: AlertLevels = AlertLevels()
