@@ -2,11 +2,12 @@ import type { Unit, ChartData } from "@/types"
 
 export const generateMockData = (): ChartData[] => {
   const data: ChartData[] = []
+  // Generate data for last 7 days with values in centimeters
   for (let i = 6; i >= 0; i--) {
     const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
     data.push({
       date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-      level: Math.random() * 3 + 3,
+      level: Math.random() * 50 + 200, // Water level in cm (200-250cm range)
     })
   }
   return data

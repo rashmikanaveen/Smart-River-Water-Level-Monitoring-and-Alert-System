@@ -15,10 +15,10 @@ from app.services.mqtt_service import mqtt_service
 from app.services.websocket_service import websocket_service
 from app.api.routes import router
 from app.api.unit_routes import router as unit_router
+from app.api.average_routes import router as average_router
 from app.db.sessions import engine
 
 from .models.user import User
-from app.api.sensor_routes import router as sensor_router
 from app.startup.calculate_averages import calculate_missing_averages_on_startup
 from app.tasks.daily_midnight_task import daily_scheduler
 
@@ -74,7 +74,7 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown
-    logger.info("🔄 Shutting down...")
+    logger.info(" Shutting down...")
     daily_scheduler.stop()
     await mqtt_service.disconnect()
     logger.info("✓ Shutdown completed")
@@ -117,7 +117,7 @@ async def get_users(session: AsyncSession = Depends(get_session)):
 
 app.include_router(router)
 app.include_router(unit_router)
-app.include_router(sensor_router)
+app.include_router(average_router)
 
 @app.websocket("/ws/distance")
 async def websocket_distance(websocket: WebSocket):

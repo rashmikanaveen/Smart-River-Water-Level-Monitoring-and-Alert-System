@@ -7,8 +7,8 @@ import type { Unit, ChartData } from "@/types"
 
 interface UnitContextType {
   units: Unit[]
-  selectedUnit: Unit
-  setSelectedUnit: (unit: Unit) => void
+  selectedUnit: Unit | null
+  setSelectedUnit: (unit: Unit | null) => void
   updateUnit: (unitId: string, updates: Partial<Unit>) => void
   updateUnitName: (unitId: string, newName: string) => void
   updateAlertLevels: (unitId: string, alertLevels: { warning: number; high: number; critical: number }) => void
@@ -27,7 +27,7 @@ const UnitContext = createContext<UnitContextType | undefined>(undefined)
 
 export const UnitProvider = ({ children }: { children: ReactNode }) => {
   const [units, setUnits] = useState<Unit[]>(mockUnits)
-  const [selectedUnit, setSelectedUnit] = useState<Unit>(mockUnits[0])
+  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null)
   const [historicalData] = useState<ChartData[]>(generateMockData())
 
   const { editingName, tempName, setTempName, startRenaming, cancelRenaming, saveRenaming } = useUnitRenaming()
@@ -35,8 +35,8 @@ export const UnitProvider = ({ children }: { children: ReactNode }) => {
   const updateUnit = (unitId: string, updates: Partial<Unit>) => {
     setUnits((prevUnits) => prevUnits.map((unit) => (unit.unit_id === unitId ? { ...unit, ...updates } : unit)))
 
-    if (selectedUnit.unit_id === unitId) {
-      setSelectedUnit((prevSelected) => ({ ...prevSelected, ...updates }))
+    if (selectedUnit?.unit_id === unitId) {
+      setSelectedUnit((prevSelected) => prevSelected ? { ...prevSelected, ...updates } : null)
     }
   }
 

@@ -13,7 +13,20 @@ export default function DetailsPage() {
   const { units, selectedUnit, setSelectedUnit, startRenaming } = useUnitContext()
 
   const handleStartRenaming = (unit: Unit) => {
-    startRenaming(unit.id, unit.name)
+    startRenaming(unit.unit_id, unit.name)
+  }
+
+  // Safety check - if no selected unit, show message
+  if (!selectedUnit) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="p-12 text-center">
+            <p className="text-gray-500 text-lg">No unit selected. Please select a unit from the dashboard.</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -31,14 +44,14 @@ export default function DetailsPage() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {units.map((unit: Unit) => (
               <Button
-                key={unit.id}
-                variant={selectedUnit.id === unit.id ? "default" : "outline"}
+                key={unit.unit_id}
+                variant={selectedUnit.unit_id === unit.unit_id ? "default" : "outline"}
                 onClick={() => setSelectedUnit(unit)}
                 className="h-auto p-3"
               >
                 <div className="text-center">
                   <div className="font-semibold">{unit.name}</div>
-                  <div className="text-xs opacity-70">{unit.currentLevel.toFixed(2)}m</div>
+                  <div className="text-xs opacity-70">{unit.changeInCm ? (unit.changeInCm / 100).toFixed(2) : '0.00'}m</div>
                 </div>
               </Button>
             ))}
@@ -68,13 +81,15 @@ export default function DetailsPage() {
           {/* Current Status */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="text-center p-6 bg-blue-50 rounded-xl">
-              <div className="text-4xl font-bold text-blue-600 mb-2">{selectedUnit.currentLevel.toFixed(2)}m</div>
+              <div className="text-4xl font-bold text-blue-600 mb-2">
+                {selectedUnit.changeInCm ? (selectedUnit.changeInCm / 100).toFixed(2) : '0.00'}m
+              </div>
               <p className="text-gray-600 mb-3">Current Level</p>
               <div className="flex items-center justify-center gap-2">
-                {getTrendIcon(selectedUnit.trend, selectedUnit.changeInCm)}
-                <span className={`font-semibold ${getChangeColor(selectedUnit.changeInCm, selectedUnit.trend)}`}>
+                {getTrendIcon(selectedUnit.trend, selectedUnit.changeInCm || 0)}
+                <span className={`font-semibold ${getChangeColor(selectedUnit.changeInCm || 0, selectedUnit.trend)}`}>
                   {selectedUnit.trend === "up" ? "+" : ""}
-                  {selectedUnit.changeInCm}cm
+                  {selectedUnit.changeInCm || 0}cm
                 </span>
               </div>
             </div>
@@ -146,19 +161,11 @@ export default function DetailsPage() {
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Unit ID:</span>
-                  <span className="font-mono font-semibold">{selectedUnit.id}</span>
+                  <span className="font-mono font-semibold">{selectedUnit.unit_id}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Location:</span>
-                  <span className="font-medium">{selectedUnit.location}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Latitude:</span>
-                  <span className="font-mono">{selectedUnit.coordinates.lat.toFixed(4)}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Longitude:</span>
-                  <span className="font-mono">{selectedUnit.coordinates.lng.toFixed(4)}</span>
+                  <span className="font-medium">{selectedUnit.location || 'Not set'}</span>
                 </div>
               </div>
             </div>
@@ -178,14 +185,6 @@ export default function DetailsPage() {
                     {getSensorStatusIcon(selectedUnit.sensorStatus)}
                     <span className="capitalize font-medium">{selectedUnit.sensorStatus}</span>
                   </div>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Last Update:</span>
-                  <span className="font-medium">{selectedUnit.lastUpdate}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Previous Level:</span>
-                  <span className="font-mono font-semibold">{selectedUnit.previousLevel.toFixed(2)}m</span>
                 </div>
               </div>
             </div>

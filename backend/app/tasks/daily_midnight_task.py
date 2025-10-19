@@ -20,21 +20,21 @@ class DailyMidnightScheduler:
             logger.info("🕛 Running midnight daily averages calculation...")
             # Run the async function in the event loop
             asyncio.run(calculate_end_of_day_averages())
-            logger.info("✅ Midnight daily averages calculation completed")
+            logger.info(" Midnight daily averages calculation completed")
         except Exception as e:
-            logger.error(f"❌ Error in midnight calculation: {e}")
+            logger.error(f"Error in midnight calculation: {e}")
     
     def schedule_daily_tasks(self):
         """Schedule the daily midnight task"""
         # Schedule for midnight (00:01 to ensure it's after midnight)
         schedule.every().day.at("00:01").do(self.run_midnight_calculation)
-        logger.info("📅 Scheduled daily averages calculation for midnight (00:01)")
+        logger.info(" Scheduled daily averages calculation for midnight (00:01)")
     
     def run_scheduler(self):
         """Run the scheduler in a separate thread"""
         self.schedule_daily_tasks()
         self.running = True
-        logger.info("🚀 Starting daily scheduler...")
+        logger.info(" Starting daily scheduler...")
         
         while self.running:
             schedule.run_pending()
@@ -58,11 +58,11 @@ class DailyMidnightScheduler:
             # Wait for thread to finish but with timeout
             self.thread.join(timeout=2.0)
             if self.thread.is_alive():
-                logger.warning("⚠️ Daily scheduler thread did not stop cleanly")
+                logger.warning("! Daily scheduler thread did not stop cleanly")
             else:
-                logger.info("🛑 Daily scheduler stopped")
+                logger.info(" Daily scheduler stopped")
         else:
-            logger.info("🛑 Daily scheduler stopped")
+            logger.info(" Daily scheduler stopped")
 
 # Global scheduler instance
 daily_scheduler = DailyMidnightScheduler()

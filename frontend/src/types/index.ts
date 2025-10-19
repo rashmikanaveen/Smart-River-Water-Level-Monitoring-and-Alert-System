@@ -32,4 +32,5 @@ export interface CustomTooltipProps {
   active?: boolean
   payload?: any[]
   label?: string
+  normalLevel?: number
 }

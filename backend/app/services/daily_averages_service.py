@@ -156,7 +156,7 @@ class DailyAveragesService:
                 # Make sure to flush and commit the transaction
                 await self.db.flush()
                 await self.db.commit()
-                logger.info(f"✅ Updated daily averages for unit {unit_id} on {target_date} - avg_height: {existing_record.avg_height}, count: {existing_record.measurement_count}")
+                logger.info(f"Updated daily averages for unit {unit_id} on {target_date} - avg_height: {existing_record.avg_height}, count: {existing_record.measurement_count}")
                 return existing_record
             else:
                 # Create new record
@@ -182,11 +182,11 @@ class DailyAveragesService:
                 # Refresh to get the saved data
                 await self.db.refresh(daily_average)
                 
-                logger.info(f"✅ Created daily averages for unit {unit_id} on {target_date} - avg_height: {daily_average.avg_height}, count: {daily_average.measurement_count}, ID: {daily_average.id}")
+                logger.info(f" Created daily averages for unit {unit_id} on {target_date} - avg_height: {daily_average.avg_height}, count: {daily_average.measurement_count}, ID: {daily_average.id}")
                 return daily_average
                 
         except Exception as e:
-            logger.error(f"❌ Error calculating daily averages for unit {unit_id} on {target_date}: {str(e)}")
+            logger.error(f" Error calculating daily averages for unit {unit_id} on {target_date}: {str(e)}")
             import traceback
             logger.error(traceback.format_exc())
             await self.db.rollback()
@@ -278,11 +278,11 @@ class DailyAveragesService:
                     calculated_count += 1
                 current_date += timedelta(days=1)
             
-            logger.info(f"✅ Calculated {calculated_count} daily averages for unit {unit_id}")
+            logger.info(f"Calculated {calculated_count} daily averages for unit {unit_id}")
             return calculated_count
             
         except Exception as e:
-            logger.error(f"❌ Error in calculate_missing_averages_for_unit for {unit_id}: {e}")
+            logger.error(f" Error in calculate_missing_averages_for_unit for {unit_id}: {e}")
             import traceback
             logger.error(traceback.format_exc())
             return 0

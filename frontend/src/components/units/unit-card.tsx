@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress"
 import { Edit, Check, X, Wifi, WifiOff } from "lucide-react"
 import { getStatusColor, getTrendIcon, getChangeColor } from "@/lib/utils"
 import { useWebSocketData } from "@/hooks/useWebSocket"
+import { useUnitContext } from "@/context/unit-context"
 import { useState, useEffect } from "react"
 import type { Unit } from "@/types"
 
@@ -16,6 +17,8 @@ interface UnitCardProps {
 }
 
 export const UnitCard = ({ unit_id }: UnitCardProps) => {
+  const { selectedUnit, setSelectedUnit } = useUnitContext();
+  
   // Local state for the component
   const [data, setData] = useState({
     unit_id: unit_id,
@@ -33,7 +36,9 @@ export const UnitCard = ({ unit_id }: UnitCardProps) => {
   // Local state for editing name
   const [isEditing, setIsEditing] = useState(false);
   const [tempName, setTempName] = useState(data.name);
-  const [isSelected, setIsSelected] = useState(false);
+  
+  // Check if this unit is selected
+  const isSelected = selectedUnit?.unit_id === unit_id;
 
   // Get WebSocket data
   const { sensorData, isConnected } = useWebSocketData(unit_id);
@@ -68,9 +73,31 @@ export const UnitCard = ({ unit_id }: UnitCardProps) => {
   
   const status = data.status as "normal"| "high" | "critical" ;
   
+  // Map status to match Unit type
+  const mappedStatus: "normal" | "critical" | "low" = 
+    status === "high" ? "critical" : 
+    status === "critical" ? "critical" : "normal";
+  
   // Local handlers for the component
   const handleSelect = () => {
-    setIsSelected(!isSelected);
+    // Create a Unit object from current data
+    const unitData: Unit = {
+      unit_id: data.unit_id,
+      name: data.name,
+      location: "", // Add location if available
+      changeInCm: Math.abs((data.hight - data.previousLevel) * 100),
+      trend: data.trend,
+      status: mappedStatus,
+      battery: data.battery,
+      signal: data.signal,
+      sensorStatus: "active",
+      alertLevels: {
+        warning: 0,
+        high: 0,
+        critical: 0
+      }
+    };
+    setSelectedUnit(unitData);
   };
   
   const handleStartRenaming = () => {
