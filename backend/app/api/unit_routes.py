@@ -6,6 +6,7 @@ from app.models.database.unit import UnitDB
 from sqlalchemy.future import select
 
 router = APIRouter(prefix="/api")
+router.tags = ["units"]
 
 @router.get("/units")
 async def list_units(session: AsyncSession = Depends(get_session)):
@@ -39,6 +40,42 @@ async def list_units(session: AsyncSession = Depends(get_session)):
         raise HTTPException(status_code=500, detail=f"Error retrieving units: {str(e)}")
     
 
+@router.get("/units/levels")
+async def get_all_unit_levels(session: AsyncSession = Depends(get_session)):
+    """
+    Get alert levels for all active units.
+    Returns unit_id, name, location and all alert levels (normal, warning, high, critical).
+    """
+    try:
+        # Get all active units
+        result = await session.execute(
+            select(UnitDB).where(UnitDB.is_active == True)
+        )
+        units = result.scalars().all()
+        
+        # Format response
+        units_levels = []
+        for unit in units:
+            units_levels.append({
+                "unit_id": unit.unit_id,
+                "name": unit.name,
+                "location": unit.location,
+                "levels": {
+                    "normal": unit.normal_level,
+                    "warning": unit.warning_level,
+                    "high": unit.high_level,
+                    "critical": unit.critical_level
+                }
+            })
+        
+        return {
+            "total_units": len(units_levels),
+            "units": units_levels
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving unit levels: {str(e)}")
+
+
 @router.put("/updateUnitData/{unit_id}")
 async def update_unit_data(unit_id: str, unit: Unit, session: AsyncSession = Depends(get_session)):
     try:
@@ -70,3 +107,4 @@ async def update_unit_data(unit_id: str, unit: Unit, session: AsyncSession = Dep
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating unit: {str(e)}")
+    

@@ -10,8 +10,15 @@ interface SensorData {
   signal: number;
   unit: string;
   sensor_status: 1|0;
-  status: "normal" |"high" | "critical"   ; // Updated to include new statuses
+  status: string; // Can be "normal", "warning", "high", "critical" from backend
   trend?: "up" | "down" | "stable";
+  normal_level?: number; // Normal water level in cm
+  alert_levels?: {
+    normal?: number;    // in meters
+    warning?: number;   // in meters
+    high?: number;      // in meters
+    critical?: number;  // in meters
+  };
 }
 
 interface WebSocketContextType {
@@ -50,6 +57,12 @@ export const WebSocketProvider = ({ children, shouldConnect = true }: WebSocketP
       setIsConnected(false);
       setSensorData(null);
       setError(null);
+      return;
+    }
+
+    // Don't reconnect if already connected or connecting
+    if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
+      console.log("WebSocket already connected or connecting, skipping setup");
       return;
     }
 
@@ -109,7 +122,14 @@ export const WebSocketProvider = ({ children, shouldConnect = true }: WebSocketP
                 unit: data.unit || data.unit_id,
                 sensor_status: data.sensor_status || 0,
                 status:data.status  || "normal", // Default to "normal" if not provided
-                trend: data.trend || "stable", // Default to "stable" 
+                trend: data.trend || "stable", // Default to "stable"
+                normal_level: data.normal_level || data.normalLevel, // Normal level in cm
+                alert_levels: data.alert_levels ? {
+                  normal: data.alert_levels.normal,
+                  warning: data.alert_levels.warning,
+                  high: data.alert_levels.high,
+                  critical: data.alert_levels.critical
+                } : undefined
               });
             }
           } catch (err) {

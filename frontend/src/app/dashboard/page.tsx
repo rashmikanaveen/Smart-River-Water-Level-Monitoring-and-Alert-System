@@ -6,7 +6,6 @@ import { ArrowUp, Edit } from "lucide-react"
 import { UnitCard } from "@/components/units/unit-card"
 import { WaterLevelChart } from "@/components/charts/water-level-chart"
 import { useUnitContext } from "@/context/unit-context"
-import { WebSocketProvider } from "@/context/websocket-context"
 import { useState, useEffect, useRef } from "react"
 import AxiosInstance from "@/lib/axios-instance"
 import type { Unit } from "@/types"
@@ -23,13 +22,14 @@ function DashboardContent() {
   const [historicalData, setHistoricalData] = useState<any[]>([])
   const [apiAlertLevels, setApiAlertLevels] = useState<any>(null)
   const [loadingHistory, setLoadingHistory] = useState(false)
+  const [unitsLevels, setUnitsLevels] = useState<any[]>([]) // Store alert levels for all units
   const fetchingRef = useRef(false)
 
   // Fetch all units from backend on mount
   const fetchUnits = async () => {
   try {
     const response = await AxiosInstance.get("/api/units")
-    console.log("📥 API response:", response.data) // Debug log
+    console.log("API response:", response.data) // Debug log
     
     // Extract the units array from the response
     if (response.data && response.data.units && Array.isArray(response.data.units)) {
@@ -48,17 +48,32 @@ function DashboardContent() {
   }
 }
 
+  // Fetch alert levels for all units
+  const fetchUnitsLevels = async () => {
+    try {
+      const response = await AxiosInstance.get("/api/units/levels")
+      console.log("Alert levels response:", response.data)
+      
+      if (response.data && response.data.units && Array.isArray(response.data.units)) {
+        setUnitsLevels(response.data.units)
+      }
+    } catch (error) {
+      console.error("Error fetching units levels:", error)
+      setUnitsLevels([])
+    }
+  }
+
   // Fetch historical data for selected unit
   const fetchHistoricalData = async (unitId: string) => {
-    console.log("🔄 Starting to fetch historical data for:", unitId)
+    console.log("Starting to fetch historical data for:", unitId)
     setLoadingHistory(true)
     try {
       const response = await AxiosInstance.get(`/api/averages/${unitId}`)
-      console.log("📊 Historical data response:", response.data)
+      console.log("Historical data response:", response.data)
       
       // Store alert levels from API (already in cm)
       if (response.data && response.data.alert_levels) {
-        console.log("📏 Alert levels from API:", response.data.alert_levels)
+        console.log("Alert levels from API:", response.data.alert_levels)
         setApiAlertLevels(response.data.alert_levels)
       }
       
@@ -74,8 +89,8 @@ function DashboardContent() {
             level: item.avg_height || item.avg_hight || 0, // Data is in cm (note: API uses avg_height)
           }))
         
-        console.log("✅ Transformed chart data:", chartData)
-        console.log("📈 Chart data length:", chartData.length)
+        console.log("Transformed chart data:", chartData)
+        console.log("Chart data length:", chartData.length)
         
         setHistoricalData(chartData)
       } else if (response.data && Array.isArray(response.data)) {
@@ -86,45 +101,46 @@ function DashboardContent() {
             date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
             level: item.avg_height || item.avg_hight || 0,
           }))
-        console.log("✅ Transformed chart data (array format):", chartData)
+        console.log("Transformed chart data (array format):", chartData)
         setHistoricalData(chartData)
       } else {
-        console.log("⚠️ No valid data found")
+        console.log("No valid data found")
         setHistoricalData([])
       }
     } catch (error) {
-      console.error("❌ Error fetching historical data:", error)
+      console.error("Error fetching historical data:", error)
       setHistoricalData([])
       setApiAlertLevels(null)
     } finally {
       setLoadingHistory(false)
-      console.log("✅ Finished fetching historical data")
+      console.log("Finished fetching historical data")
     }
   }
 
   useEffect(() => {
     fetchUnits()
+    fetchUnitsLevels() // Fetch alert levels on mount
   }, [])
 
   // Auto-select first unit when units are loaded
   useEffect(() => {
     if (units.length > 0 && !selectedUnit) {
-      console.log("🎯 Auto-selecting first unit:", units[0].name)
+      console.log("Auto-selecting first unit:", units[0].name)
       setSelectedUnit(units[0])
     }
   }, [units, selectedUnit, setSelectedUnit])
 
   // Fetch historical data when selected unit changes
   useEffect(() => {
-    console.log("🎯 Selected unit changed:", selectedUnit?.unit_id, selectedUnit?.name)
+    console.log("Selected unit changed:", selectedUnit?.unit_id, selectedUnit?.name)
     if (selectedUnit?.unit_id && !fetchingRef.current) {
-      console.log("🚀 Fetching data for unit:", selectedUnit.unit_id)
+      console.log("Fetching data for unit:", selectedUnit.unit_id)
       fetchingRef.current = true
       fetchHistoricalData(selectedUnit.unit_id).finally(() => {
         fetchingRef.current = false
       })
     } else if (!selectedUnit?.unit_id) {
-      console.log("⚠️ No unit selected, showing mock data")
+      console.log("No unit selected, showing mock data")
     }
   }, [selectedUnit?.unit_id])
 
@@ -163,14 +179,7 @@ function DashboardContent() {
                   Water level changes over time (Last {historicalData.length} days) • Lower values indicate rising water
                 </CardDescription>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <Edit className="h-4 w-4" />
-                Rename
-              </Button>
+              
             </div>
           </CardHeader>
           <CardContent className="p-6">
@@ -241,9 +250,5 @@ function DashboardContent() {
 }
 
 export default function DashboardPage() {
-  return (
-    <WebSocketProvider shouldConnect={true}>
-      <DashboardContent />
-    </WebSocketProvider>
-  )
+  return <DashboardContent />
 }
