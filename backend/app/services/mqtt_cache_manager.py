@@ -31,6 +31,10 @@ class MQTTCacheManager:
         #                       "rssi": int, "snr": float, "last_updated": datetime}}
         self._latest_sensor_data_cache: Dict[str, Dict] = {}
         
+        # Cache for unit metadata (alert levels, name, location, is_active)
+        # Structure: {unit_id: {"name": str, "location": str, "normal": float, "warning": float, "high": float, "critical": float, "is_active": bool, "last_refreshed": datetime}}
+        self._unit_meta_cache: Dict[str, Dict] = {}
+        
         # Number of readings to collect for normal value calculation
         self.NORMAL_CALCULATION_READINGS = 12
         
@@ -115,6 +119,17 @@ class MQTTCacheManager:
                 
                 # Cache the saved value
                 self.set_cached_normal_value(unit_id, normal_level)
+                # Refresh unit metadata cache for this unit
+                try:
+                    # Reload full unit row and cache metadata
+                    result = await session.execute(
+                        select(UnitDB).where(UnitDB.unit_id == unit_id)
+                    )
+                    unit_row = result.scalars().first()
+                    if unit_row:
+                        self.set_unit_metadata_from_row(unit_row)
+                except Exception:
+                    logger.debug(f"Could not refresh unit metadata cache for {unit_id}")
                 return True
                 
         except Exception as e:
@@ -223,6 +238,46 @@ class MQTTCacheManager:
     def get_latest_sensor_data(self, unit_id: str) -> Optional[Dict]:
         """Get the latest cached sensor data for a unit"""
         return self._latest_sensor_data_cache.get(unit_id)
+
+    def set_unit_metadata_from_row(self, unit_row: UnitDB):
+        """Cache metadata for a UnitDB row"""
+        if not unit_row:
+            return
+        self._unit_meta_cache[unit_row.unit_id] = {
+            "name": unit_row.name,
+            "location": unit_row.location,
+            "normal": unit_row.normal_level,
+            "warning": unit_row.warning_level,
+            "high": unit_row.high_level,
+            "critical": unit_row.critical_level,
+            "is_active": unit_row.is_active,
+            "last_refreshed": datetime.now()
+        }
+        logger.debug(f"Cached unit metadata for {unit_row.unit_id}")
+
+    async def refresh_unit_metadata_from_db(self, unit_id: str) -> Optional[Dict]:
+        """Refresh metadata for a unit from the database and return it"""
+        try:
+            async for session in get_session():
+                result = await session.execute(
+                    select(UnitDB).where(UnitDB.unit_id == unit_id)
+                )
+                unit_row = result.scalars().first()
+                if unit_row:
+                    self.set_unit_metadata_from_row(unit_row)
+                    return self._unit_meta_cache.get(unit_id)
+                return None
+        except Exception as e:
+            logger.error(f"Error refreshing unit metadata from DB for {unit_id}: {e}")
+            return None
+
+    def get_unit_metadata(self, unit_id: str) -> Optional[Dict]:
+        """Get cached unit metadata; returns None if not cached"""
+        return self._unit_meta_cache.get(unit_id)
+
+    def get_all_unit_metadata(self) -> Dict[str, Dict]:
+        """Return a copy of all cached unit metadata"""
+        return self._unit_meta_cache.copy()
     
     def get_all_latest_sensor_data(self) -> Dict[str, Dict]:
         """Get all cached latest sensor data for all units"""

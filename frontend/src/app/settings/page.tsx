@@ -13,8 +13,22 @@ import { SettingsIcon, Save, CheckCircle2, XCircle } from "lucide-react"
 import AddUnit from "@/components/addUnit"
 import type { Unit } from "@/types"
 import { getStatusColor } from "@/lib/utils"
+import Link from 'next/link'
+import { useAuth } from '@/context/auth-context'
 
 export default function SettingsPage() {
+  const { user } = useAuth()
+
+  // Only admin can access settings
+  if (!user || user.role !== 'user') {
+    return (
+      <div className="p-12 text-center">
+        <h2 className="text-2xl font-semibold mb-4">Restricted</h2>
+        <p className="mb-6">You must be an admin to access this page.</p>
+        <Link href="/login"><button className="px-4 py-2 bg-blue-600 text-white rounded">Go to Login</button></Link>
+      </div>
+    )
+  }
   const [units, setUnits] = useState<Unit[]>([])
   const [editingLevels, setEditingLevels] = useState<{
     [key: string]: { name: string; location: string; warning: number | null; high: number | null; critical: number | null } | undefined
@@ -104,7 +118,7 @@ export default function SettingsPage() {
   const handleSaveAlertLevels = async (unitId: string) => {
     if (editingLevels[unitId]) {
       try {
-        const response = await AxiosInstance.put(`/updateUnitData/${unitId}`, {
+        const response = await AxiosInstance.put(`/api/updateUnitData/${unitId}`, {
           unit_id: unitId,
           name: editingLevels[unitId]?.name ?? "",
           location: editingLevels[unitId]?.location ?? "",

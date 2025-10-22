@@ -93,6 +93,42 @@ class MQTTService:
                 snr=snr
             )
 
+            # Determine alert status by comparing height (cm) against thresholds
+            # Thresholds are stored in meters in cache/database; convert to cm for comparison
+            try:
+                meta = mqtt_cache_manager.get_unit_metadata(unit_id)
+                if not meta:
+                    meta = await mqtt_cache_manager.refresh_unit_metadata_from_db(unit_id)
+
+                if meta:
+                    warning_m = meta.get("warning")
+                    high_m = meta.get("high")
+                    critical_m = meta.get("critical")
+                else:
+                    # Metadata missing; will fall back to safe defaults below
+                    warning_m = high_m = critical_m = None
+
+                # Convert meters to centimeters for comparison. If a threshold is missing, set to a very large value so it won't trigger.
+                warning_cm = (float(warning_m) * 100) if (warning_m is not None) else float('inf')
+                high_cm = (float(high_m) * 100) if (high_m is not None) else float('inf')
+                critical_cm = (float(critical_m) * 100) if (critical_m is not None) else float('inf')
+
+            except Exception:
+                # On any error, default thresholds to infinity (no alerts)
+                warning_cm = high_cm = critical_cm = float('inf')
+
+            current_water_level_Difference = abs(height - normal_value)
+
+            # Determine status: height is in cm
+            if current_water_level_Difference < warning_cm:
+                status = "normal"
+            elif current_water_level_Difference < high_cm:
+                status = "warning"
+            elif current_water_level_Difference < critical_cm:
+                status = "high"
+            else:
+                status = "critical"
+
             # Calculate water level relative to normal
             # You can modify this calculation based on your requirements
             result = {
@@ -104,8 +140,8 @@ class MQTTService:
                 "battery": battery,
                 "signal": 35,
                 "trend": "up",
-                "sensor_status": "normal",
-                "status": "normal",  # "normal","warning", "high", "critical"
+                "sensor_status": status,
+                "status": status,  # "normal","warning", "high", "critical"
                 "time": time
             }
 

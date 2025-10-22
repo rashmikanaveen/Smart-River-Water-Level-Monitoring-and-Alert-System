@@ -4,6 +4,8 @@ import "./globals.css"
 import { UnitProvider } from "@/context/unit-context"
 import { WebSocketWrapper } from "@/components/websocket-wrapper"
 import { LayoutContent } from "@/components/layout-content"
+import { AuthProvider } from "@/context/auth-context"
+import Footer from "@/components/footer"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -20,11 +22,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <UnitProvider>
-          <WebSocketWrapper>
-            <LayoutContent>{children}</LayoutContent>
-          </WebSocketWrapper>
-        </UnitProvider>
+        <AuthProvider>
+          <UnitProvider>
+            <WebSocketWrapper>
+              <LayoutContent>{children}</LayoutContent>
+              <Footer />
+            </WebSocketWrapper>
+          </UnitProvider>
+        </AuthProvider>
       </body>
     </html>
   )

@@ -644,8 +644,8 @@ SECRET_KEY=your-secret-key
 
 ### Frontend (.env.local)
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
+NEXT_PUBLIC_WS_URL=ws://127.0.0.1:8000/ws/distance
+NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
 ```
 
 ---

@@ -16,6 +16,7 @@ from app.services.websocket_service import websocket_service
 from app.api.routes import router
 from app.api.unit_routes import router as unit_router
 from app.api.average_routes import router as average_router
+from app.api.auth_routes import router as auth_router
 from app.db.sessions import engine
 
 from .models.user import User
@@ -118,6 +119,7 @@ async def get_users(session: AsyncSession = Depends(get_session)):
 app.include_router(router)
 app.include_router(unit_router)
 app.include_router(average_router)
+app.include_router(auth_router)
 
 @app.websocket("/ws/distance")
 async def websocket_distance(websocket: WebSocket):

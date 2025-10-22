@@ -4,6 +4,8 @@ from app.db.sessions import get_session
 from app.models.unit import Unit
 from app.models.database.unit import UnitDB
 from sqlalchemy.future import select
+import logging
+from app.services.mqtt_cache_manager import mqtt_cache_manager
 
 router = APIRouter(prefix="/api")
 router.tags = ["units"]
@@ -11,26 +13,29 @@ router.tags = ["units"]
 @router.get("/units")
 async def list_units(session: AsyncSession = Depends(get_session)):
     try:
-        # Get all active units with full details
+        # Prefer cached metadata for name/location/levels/is_active
+        cached_meta = mqtt_cache_manager.get_all_unit_metadata()
+
+        # Fetch DB rows primarily for timestamps
         result = await session.execute(
             select(UnitDB).where(UnitDB.is_active == True)
         )
         units = result.scalars().all()
-        
-        # Convert to response format
+
         unit_list = []
         for unit in units:
+            meta = cached_meta.get(unit.unit_id) if cached_meta else None
             unit_list.append({
                 "unit_id": unit.unit_id,
-                "name": unit.name,
-                "location": unit.location,
+                "name": meta.get("name") if meta else unit.name,
+                "location": meta.get("location") if meta else unit.location,
                 "alertLevels": {
-                    "normal": unit.normal_level,
-                    "warning": unit.warning_level,
-                    "high": unit.high_level,
-                    "critical": unit.critical_level
+                    "normal": meta.get("normal") if meta else unit.normal_level,
+                    "warning": meta.get("warning") if meta else unit.warning_level,
+                    "high": meta.get("high") if meta else unit.high_level,
+                    "critical": meta.get("critical") if meta else unit.critical_level
                 },
-                "is_active": unit.is_active,
+                "is_active": meta.get("is_active") if meta else unit.is_active,
                 "created_at": unit.created_at.isoformat() if unit.created_at else None,
                 "updated_at": unit.updated_at.isoformat() if unit.updated_at else None
             })
@@ -47,26 +52,44 @@ async def get_all_unit_levels(session: AsyncSession = Depends(get_session)):
     Returns unit_id, name, location and all alert levels (normal, warning, high, critical).
     """
     try:
-        # Get all active units
-        result = await session.execute(
-            select(UnitDB).where(UnitDB.is_active == True)
-        )
-        units = result.scalars().all()
-        
-        # Format response
+        # Try to get units metadata from cache first
+        cached_meta = mqtt_cache_manager.get_all_unit_metadata()
         units_levels = []
-        for unit in units:
-            units_levels.append({
-                "unit_id": unit.unit_id,
-                "name": unit.name,
-                "location": unit.location,
-                "levels": {
-                    "normal": unit.normal_level,
-                    "warning": unit.warning_level,
-                    "high": unit.high_level,
-                    "critical": unit.critical_level
-                }
-            })
+
+        if cached_meta:
+            # Use cached metadata but ensure we only include active units
+            for unit_id, meta in cached_meta.items():
+                if not meta.get("is_active", True):
+                    continue
+                units_levels.append({
+                    "unit_id": unit_id,
+                    "name": meta.get("name"),
+                    "location": meta.get("location"),
+                    "levels": {
+                        "normal": meta.get("normal"),
+                        "warning": meta.get("warning"),
+                        "high": meta.get("high"),
+                        "critical": meta.get("critical")
+                    }
+                })
+        else:
+            # Fallback to database
+            result = await session.execute(
+                select(UnitDB).where(UnitDB.is_active == True)
+            )
+            units = result.scalars().all()
+            for unit in units:
+                units_levels.append({
+                    "unit_id": unit.unit_id,
+                    "name": unit.name,
+                    "location": unit.location,
+                    "levels": {
+                        "normal": unit.normal_level,
+                        "warning": unit.warning_level,
+                        "high": unit.high_level,
+                        "critical": unit.critical_level
+                    }
+                })
         
         return {
             "total_units": len(units_levels),
@@ -74,6 +97,38 @@ async def get_all_unit_levels(session: AsyncSession = Depends(get_session)):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving unit levels: {str(e)}")
+
+
+@router.get("/units/{unit_id}/levels")
+async def get_unit_levels(unit_id: str, session: AsyncSession = Depends(get_session)):
+    """
+    Get alert levels for a specific unit. Uses cache first, falls back to DB.
+    """
+    try:
+        meta = mqtt_cache_manager.get_unit_metadata(unit_id)
+        if not meta:
+            # Refresh from DB
+            meta = await mqtt_cache_manager.refresh_unit_metadata_from_db(unit_id)
+
+        if not meta:
+            raise HTTPException(status_code=404, detail=f"Unit {unit_id} not found")
+
+        return {
+            "unit_id": unit_id,
+            "name": meta.get("name"),
+            "location": meta.get("location"),
+            "is_active": meta.get("is_active"),
+            "levels": {
+                "normal": meta.get("normal"),
+                "warning": meta.get("warning"),
+                "high": meta.get("high"),
+                "critical": meta.get("critical")
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving levels for unit {unit_id}: {str(e)}")
 
 
 @router.put("/updateUnitData/{unit_id}")
@@ -101,7 +156,14 @@ async def update_unit_data(unit_id: str, unit: Unit, session: AsyncSession = Dep
         
         # Commit changes
         await session.commit()
-        
+
+        # Refresh metadata cache for this unit
+        try:
+            await mqtt_cache_manager.refresh_unit_metadata_from_db(unit_id)
+        except Exception:
+            logger = __import__('logging').getLogger(__name__)
+            logger.debug(f"Failed to refresh unit metadata cache for {unit_id} after update")
+
         return {"message": "Unit updated successfully"}
     except HTTPException:
         raise
