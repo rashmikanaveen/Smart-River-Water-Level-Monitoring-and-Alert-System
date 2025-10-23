@@ -2,10 +2,17 @@
 
 import Link from 'next/link'
 import { useAuth } from '@/context/auth-context'
+import { useState, useEffect } from 'react'
 
 export default function Footer() {
   const { user, logout } = useAuth()
   const year = new Date().getFullYear()
+  const [mounted, setMounted] = useState(false)
+
+  // Wait for client-side hydration to complete
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <footer className="bg-white border-t border-gray-200 w-full">
@@ -17,7 +24,10 @@ export default function Footer() {
         <ul className="flex flex-wrap items-center mt-3 text-sm font-medium text-gray-500 sm:mt-0">
           
           <li className="flex items-center">
-            {user ? (
+            {!mounted ? (
+              // Show nothing during SSR to avoid hydration mismatch
+              <div className="w-20 h-8"></div>
+            ) : user ? (
               <>
                 <span className="text-sm mr-3">{user.name}</span>
                 <button onClick={logout} className="px-3 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200">Logout</button>
