@@ -9,7 +9,8 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.sessions import get_session
-from app.models.user import User
+from app.models.database.user import User
+from app.core.config import settings
 from sqlalchemy.future import select
 
 logger = logging.getLogger(__name__)
@@ -18,9 +19,9 @@ logger = logging.getLogger(__name__)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
 # JWT settings (for demo, keep secret in config in production)
-SECRET_KEY = "change_this_to_a_strong_secret"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 1 day
+SECRET_KEY = settings.SECRET_KEY
+ALGORITHM = settings.ALGORITHM
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

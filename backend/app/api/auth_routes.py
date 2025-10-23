@@ -3,13 +3,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.sessions import get_session
 from pydantic import BaseModel, field_validator
 from app.services.auth_service import (
-    get_password_hash, authenticate_user, create_access_token, get_user_by_username
+    get_password_hash, authenticate_user, create_access_token, get_user_by_username, admin_required
 )
-from app.models.user import User
+from app.models.database.user import User
 from sqlalchemy.future import select
 
 router = APIRouter(prefix="/api/auth")
-
+router.tags=["authentication"]
 class RegisterRequest(BaseModel):
     username: str
     email: str
@@ -30,7 +30,11 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 @router.post("/register", status_code=201)
-async def register_user(payload: RegisterRequest, db: AsyncSession = Depends(get_session)):
+async def register_user(
+    payload: RegisterRequest, 
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(admin_required)  # ✅ Only admins can register users
+):
     # Check existing user
     existing = await get_user_by_username(db, payload.username)
     if existing:
@@ -51,15 +55,3 @@ async def register_user(payload: RegisterRequest, db: AsyncSession = Depends(get
         return {"message": "User created", "username": user.username}
 
 
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-
-@router.post("/token", response_model=TokenResponse)
-async def login_for_access_token(payload: LoginRequest, db: AsyncSession = Depends(get_session)):
-    user = await authenticate_user(db, payload.username, payload.password)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
-
-    access_token = create_access_token(data={"sub": user.username})
-    return {"access_token": access_token, "token_type": "bearer"}

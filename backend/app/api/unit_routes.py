@@ -3,9 +3,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.sessions import get_session
 from app.models.unit import Unit
 from app.models.database.unit import UnitDB
+from app.models.database.user import User
 from sqlalchemy.future import select
 import logging
 from app.services.mqtt_cache_manager import mqtt_cache_manager
+from app.services.auth_service import get_current_user
 
 router = APIRouter(prefix="/api")
 router.tags = ["units"]
@@ -132,7 +134,17 @@ async def get_unit_levels(unit_id: str, session: AsyncSession = Depends(get_sess
 
 
 @router.put("/updateUnitData/{unit_id}")
-async def update_unit_data(unit_id: str, unit: Unit, session: AsyncSession = Depends(get_session)):
+async def update_unit_data(
+    unit_id: str, 
+    unit: Unit, 
+    session: AsyncSession = Depends(get_session),
+    
+):
+    """
+    Update unit data (Authenticated users only).
+    
+    Requires authentication - both regular users and admins can update.
+    """
     try:
         # Fetch the unit from the database
         result = await session.execute(

@@ -24,6 +24,7 @@ export interface NavigationItem {
   id: string
   label: string
   icon: LucideIcon
+  auth: ('user' | 'admin')[] | null  // null means public, array means requires one of these roles
 }
 
 export interface ChartData {

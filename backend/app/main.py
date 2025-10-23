@@ -17,9 +17,10 @@ from app.api.routes import router
 from app.api.unit_routes import router as unit_router
 from app.api.average_routes import router as average_router
 from app.api.auth_routes import router as auth_router
+from app.api.user_routes import router as user_router
 from app.db.sessions import engine
 
-from .models.user import User
+from .models.database.user import User
 from app.startup.calculate_averages import calculate_missing_averages_on_startup
 from app.tasks.daily_midnight_task import daily_scheduler
 
@@ -88,17 +89,17 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure properly for production
+    allow_origins=settings.ALLOWED_ORIGINS,  # Configure properly for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include API routes
-app.include_router(router)
+
 
 @app.get("/")
 def read_root():
@@ -110,16 +111,13 @@ def read_root():
         "api_docs": "/docs"
     }
 
-@router.get("/users")
-async def get_users(session: AsyncSession = Depends(get_session)):
-    result = await session.execute(select(User))
-    users = result.scalars().all()
-    return users
 
+# Include API routes
 app.include_router(router)
 app.include_router(unit_router)
 app.include_router(average_router)
 app.include_router(auth_router)
+app.include_router(user_router)
 
 @app.websocket("/ws/distance")
 async def websocket_distance(websocket: WebSocket):

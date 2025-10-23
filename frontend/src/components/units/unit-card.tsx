@@ -176,12 +176,13 @@ export const UnitCard = memo(({ unit_id }: UnitCardProps) => {
         </div>
 
         <div className="flex items-center gap-3 mb-3">
-          <div className="text-3xl font-bold text-blue-600 transition-all duration-300">{displayLevel.toFixed(2)}cm</div>
           <div className="transition-all duration-300">
             {getTrendIcon(displayTrend, changeFromNormal)}
           </div>
+          <div className="text-3xl font-bold text-blue-600 transition-all duration-300">{changeFromNormal.toFixed(1)}cm</div>
+          
           {normalLevel > 0 && (
-            <span className="text-sm text-gray-500 ml-2">{changeFromNormal.toFixed(1)}cm from normal</span>
+            <span className="text-sm text-gray-500 ml-2">{displayLevel.toFixed(2)}cm from Sensor</span>
           )}
         </div>
 

@@ -1,34 +1,57 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AxiosInstance from '@/lib/axios-instance'
 import { useAuth } from '@/context/auth-context'
 import Link from 'next/link'
+import { redirect } from "next/navigation"
 
 export default function AdminPage() {
-  const { user } = useAuth()
+  const { user, getUserRole } = useAuth()
   const [form, setForm] = useState({ username: '', email: '', password: '', full_name: '' })
   const [status, setStatus] = useState<{ type: 'success'|'error', message: string } | null>(null)
+  const [isCheckingRole, setIsCheckingRole] = useState(true)
+  const [userRole, setUserRole] = useState<'admin' | 'user' | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  if (!user || user.role !== 'admin') {
+  // Fetch user role from backend on mount
+  useEffect(() => {
+    const checkRole = async () => {
+      if (user?.name) {
+        const role = await getUserRole(user.name)
+        setUserRole(role)
+      }
+      setIsCheckingRole(false)
+    }
+    checkRole()
+  }, [user?.name, getUserRole])
+
+  // Show loading while checking role
+  if (isCheckingRole) {
     return (
       <div className="p-12 text-center">
-        <h2 className="text-2xl font-semibold mb-4">Admin area</h2>
-        <p>You need to be an admin to access this page.</p>
-        <Link href="/login"><button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded">Go to Login</button></Link>
+        <p className="text-gray-500">Checking permissions...</p>
       </div>
     )
+  }
+
+  if (!user || userRole !== 'admin') {
+    redirect('/login');
   }
 
   const submit = async (e: any) => {
     e.preventDefault()
     setStatus(null)
+    setLoading(true)
     try {
       const res = await AxiosInstance.post('/api/auth/register', form)
-      setStatus({ type: 'success', message: res.data?.message || 'User created' })
+      setStatus({ type: 'success', message: res.data?.message || 'User created successfully' })
       setForm({ username: '', email: '', password: '', full_name: '' })
     } catch (err: any) {
-      setStatus({ type: 'error', message: err.response?.data?.detail || 'Registration failed' })
+      console.error('Registration error:', err)
+      setStatus({ type: 'error', message: err.response?.data?.detail || 'Registration failed. Please try again.' })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -42,23 +65,55 @@ export default function AdminPage() {
       )}
       <form onSubmit={submit} className="space-y-4">
         <div>
-          <label className="block text-sm text-gray-700">Username</label>
-          <input className="w-full border px-3 py-2 rounded" value={form.username} onChange={e => setForm({...form, username: e.target.value})} />
+          <label className="block text-sm text-gray-700 mb-1">Username</label>
+          <input 
+            className="w-full border px-3 py-2 rounded" 
+            value={form.username} 
+            onChange={e => setForm({...form, username: e.target.value})} 
+            required
+            disabled={loading}
+          />
         </div>
         <div>
-          <label className="block text-sm text-gray-700">Email</label>
-          <input className="w-full border px-3 py-2 rounded" value={form.email} onChange={e => setForm({...form, email: e.target.value})} />
+          <label className="block text-sm text-gray-700 mb-1">Email</label>
+          <input 
+            type="email"
+            className="w-full border px-3 py-2 rounded" 
+            value={form.email} 
+            onChange={e => setForm({...form, email: e.target.value})} 
+            required
+            disabled={loading}
+          />
         </div>
         <div>
-          <label className="block text-sm text-gray-700">Full name</label>
-          <input className="w-full border px-3 py-2 rounded" value={form.full_name} onChange={e => setForm({...form, full_name: e.target.value})} />
+          <label className="block text-sm text-gray-700 mb-1">Full name</label>
+          <input 
+            className="w-full border px-3 py-2 rounded" 
+            value={form.full_name} 
+            onChange={e => setForm({...form, full_name: e.target.value})} 
+            required
+            disabled={loading}
+          />
         </div>
         <div>
-          <label className="block text-sm text-gray-700">Password</label>
-          <input type="password" className="w-full border px-3 py-2 rounded" value={form.password} onChange={e => setForm({...form, password: e.target.value})} />
+          <label className="block text-sm text-gray-700 mb-1">Password</label>
+          <input 
+            type="password" 
+            className="w-full border px-3 py-2 rounded" 
+            value={form.password} 
+            onChange={e => setForm({...form, password: e.target.value})} 
+            required
+            disabled={loading}
+          />
         </div>
         <div className="flex justify-end">
-          <button className="px-4 py-2 bg-blue-600 text-white rounded">Create User</button>
+          <button 
+            type="submit"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={loading}
+          >
+            {loading ? 'Creating...' : 'Create User'}
+          </button>
         </div>
       </form>
     </div>

@@ -15,20 +15,12 @@ import type { Unit } from "@/types"
 import { getStatusColor } from "@/lib/utils"
 import Link from 'next/link'
 import { useAuth } from '@/context/auth-context'
+import { redirect } from "next/navigation"
 
 export default function SettingsPage() {
-  const { user } = useAuth()
+  const { user, getUserRole } = useAuth()
 
-  // Only admin can access settings
-  if (!user || user.role !== 'user') {
-    return (
-      <div className="p-12 text-center">
-        <h2 className="text-2xl font-semibold mb-4">Restricted</h2>
-        <p className="mb-6">You must be an admin to access this page.</p>
-        <Link href="/login"><button className="px-4 py-2 bg-blue-600 text-white rounded">Go to Login</button></Link>
-      </div>
-    )
-  }
+  // State/hooks must be declared unconditionally at the top
   const [units, setUnits] = useState<Unit[]>([])
   const [editingLevels, setEditingLevels] = useState<{
     [key: string]: { name: string; location: string; warning: number | null; high: number | null; critical: number | null } | undefined
@@ -38,7 +30,9 @@ export default function SettingsPage() {
     title: string
     message: string
   } | null>(null)
-  
+  const [isCheckingRole, setIsCheckingRole] = useState(true)
+  const [userRole, setUserRole] = useState<'admin' | 'user' | null>(null)
+
   // Auto-hide alert after 5 seconds
   useEffect(() => {
     if (alertMessage) {
@@ -48,27 +42,56 @@ export default function SettingsPage() {
       return () => clearTimeout(timer)
     }
   }, [alertMessage])
+
   // Fetch all units from backend on mount
   const fetchUnits = async () => {
-  try {
-    const response = await AxiosInstance.get("/api/units")
-    console.log("API response:", response.data) // Debug log
-    
-    // Extract the units array from the response
-    if (response.data && response.data.units && Array.isArray(response.data.units)) {
-      setUnits(response.data.units)
-    } else {
+    try {
+      const response = await AxiosInstance.get("/api/units")
+      console.log("API response:", response.data) // Debug log
+
+      // Extract the units array from the response
+      if (response.data && response.data.units && Array.isArray(response.data.units)) {
+        setUnits(response.data.units)
+      } else {
+        setUnits([])
+      }
+    } catch (error) {
+      console.error("Error fetching units:", error)
       setUnits([])
     }
-  } catch (error) {
-    console.error("Error fetching units:", error)
-    setUnits([])
   }
-}
 
   useEffect(() => {
     fetchUnits()
   }, [])
+
+  // Fetch user role from backend on mount
+  useEffect(() => {
+    const checkRole = async () => {
+      if (user?.name) {
+        const role = await getUserRole(user.name)
+        setUserRole(role)
+      }
+      setIsCheckingRole(false)
+    }
+    checkRole()
+  }, [user?.name, getUserRole])
+
+  // Show loading while checking role
+  if (isCheckingRole) {
+    return (
+      <div className="p-12 text-center">
+        <p className="text-gray-500">Checking permissions...</p>
+      </div>
+    )
+  }
+
+  // Only logged-in users can access settings (both admin and regular users)
+  if (!user) {
+    
+    redirect('/login');
+    
+  }
 
   // Add unit handler
 
