@@ -9,10 +9,44 @@ import { navigationItems } from "@/lib/constants"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useUnitContext } from "@/context/unit-context"
+import { useAuth } from "@/context/auth-context"
+import { useState, useEffect } from "react"
 
 export const Navbar = () => {
   const pathname = usePathname()
   const { risingCount } = useUnitContext()
+  const { user, getUserRole } = useAuth()
+  const [userRole, setUserRole] = useState<'admin' | 'user' | null>(null)
+
+  // Fetch user role when user changes
+  useEffect(() => {
+    const fetchRole = async () => {
+      if (user?.name) {
+        const role = await getUserRole(user.name)
+        setUserRole(role)
+      } else {
+        setUserRole(null)
+      }
+    }
+    fetchRole()
+  }, [user?.name, getUserRole])
+
+  // Filter navigation items based on auth requirements and user role
+  const visibleNavItems = navigationItems.filter(item => {
+    // If auth is null, item is public - show to everyone
+    if (item.auth === null) {
+      return true
+    }
+    // If auth is required but no user is logged in, hide the item
+    if (item.auth && !user) {
+      return false
+    }
+    // If user is logged in and auth is required, check if user's role is in the allowed roles
+    if (item.auth && user && userRole) {
+      return item.auth.includes(userRole)
+    }
+    return false
+  })
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -33,7 +67,7 @@ export const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-1">
-            {navigationItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const Icon = item.icon
               const isActive = pathname === `/${item.id}` || (item.id === "dashboard" && pathname === "/")
               return (
@@ -63,7 +97,7 @@ export const Navbar = () => {
                 </Badge>
               )}
 
-              <Card className="p-2 hidden md:block">
+              {/*<Card className="p-2 hidden md:block">
                 <div className="flex items-center gap-2">
                   <Cloud className="h-4 w-4 text-gray-500" />
                   <div className="text-sm">
@@ -75,7 +109,7 @@ export const Navbar = () => {
               <Button variant="outline" size="sm" className="hidden sm:flex bg-transparent">
                 <Bell className="h-4 w-4 mr-2" />
                 Alerts ({risingCount})
-              </Button>
+              </Button>*/}
             </div>
 
             {/* Mobile Menu */}
@@ -86,8 +120,8 @@ export const Navbar = () => {
                     <Menu className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  {navigationItems.map((item) => {
+                <DropdownMenuContent align="end" className="w-48 bg-white border-2 border-gray-200 shadow-lg">
+                  {visibleNavItems.map((item) => {
                     const Icon = item.icon
                     const isActive = pathname === `/${item.id}` || (item.id === "dashboard" && pathname === "/")
                     return (

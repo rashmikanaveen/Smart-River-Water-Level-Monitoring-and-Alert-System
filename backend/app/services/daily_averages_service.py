@@ -15,16 +15,16 @@ class DailyAveragesService:
     def __init__(self, db: AsyncSession):
         self.db = db
     
-    async def get_active_units(self) -> List[str]:
-        """Get all active unit IDs"""
+    async def get_active_units(self) -> List[UnitDB]:
+        """Get all active UnitDB rows"""
         try:
             result = await self.db.execute(
-                select(UnitDB.unit_id).filter(UnitDB.is_active == True)
+                select(UnitDB).filter(UnitDB.is_active == True)
             )
             units = result.scalars().all()
-            unit_list = [unit for unit in units]
-            logger.info(f"Found {len(unit_list)} active units: {unit_list}")
-            return unit_list
+            
+            logger.info(f"Found {len(units)} active units: {[u.unit_id for u in units]}")
+            return units
         except Exception as e:
             logger.error(f"Error getting active units: {e}")
             return []
@@ -292,17 +292,18 @@ class DailyAveragesService:
         try:
             active_units = await self.get_active_units()
             results = {}
-            
+
             logger.info(f"Processing {len(active_units)} active units")
-            
-            for unit_id in active_units:
+
+            for unit in active_units:
+                unit_id = unit.unit_id
                 try:
                     count = await self.calculate_missing_averages_for_unit(unit_id)
                     results[unit_id] = count
                 except Exception as e:
                     logger.error(f"Error calculating averages for unit {unit_id}: {str(e)}")
                     results[unit_id] = 0
-            
+
             return results
         except Exception as e:
             logger.error(f"Error in calculate_all_missing_averages: {e}")
@@ -314,10 +315,11 @@ class DailyAveragesService:
             active_units = await self.get_active_units()
             results = {}
             yesterday = date.today() - timedelta(days=1)
-            
+
             logger.info(f"Running end-of-day calculation for {len(active_units)} units for date: {yesterday}")
-            
-            for unit_id in active_units:
+
+            for unit in active_units:
+                unit_id = unit.unit_id
                 try:
                     result = await self.calculate_daily_averages_for_date(unit_id, yesterday, store_zero_if_missing=True)
                     results[unit_id] = 1 if result else 0
@@ -325,7 +327,7 @@ class DailyAveragesService:
                 except Exception as e:
                     logger.error(f"Error in end-of-day calculation for unit {unit_id}: {str(e)}")
                     results[unit_id] = 0
-            
+
             return results
         except Exception as e:
             logger.error(f"Error in calculate_end_of_day_averages: {e}")
