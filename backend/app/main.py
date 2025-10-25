@@ -104,7 +104,7 @@ app.add_middleware(
 @app.get("/")
 def read_root():
     return {
-        "message": "Smart River Water Level Monitoring System",
+        "message": "Smart River Water Level Monitoring System- API",
         "version": settings.VERSION,
         "status": "running",
         "websocket_endpoint": "/ws",
